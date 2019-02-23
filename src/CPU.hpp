@@ -10,14 +10,19 @@ class Tests;
 
 enum class Addressing
 {
-	Immediate = 0,
-	Absolute = 1,
-	ZeroPage = 2,
-	ZeroPageX = 3,
-	AbsoluteX = 4,
-	AbsoluteY = 5,
-	IndexedIndirect = 6,
-	IndirectIndexed = 7
+	None,
+	Immediate,
+	Absolute,
+	ZeroPage,
+	ZeroPageX,
+	ZeroPageY,
+	AbsoluteX,
+	AbsoluteY,
+	IndexedIndirect,
+	IndirectIndexed,
+	Accumulator,
+	Relative,
+	Indirect
 };
 
 class CPU
@@ -61,13 +66,105 @@ class CPU
 	void ClearFlag(flag_t flag);
 	bool IsSetFlag(flag_t flag) const;
 
+	void StackPush(byte_t val);
+	byte_t StackPull();
+
 	void Cycles(unsigned long cycles);
 	static bool IsNegative(byte_t op);
 	static bool IsZero(byte_t op);
 
 	byte_t GetOP(word_t opIndex, Addressing adr);
+	void SetOP(word_t opIndex, Addressing adr, byte_t val);
 
 	void ADC(byte_t op);
 	void opADC(word_t opIndex, Addressing adr);
+
+	void AND(byte_t op);
+	void opAND(word_t opIndex, Addressing adr);
+
+	byte_t ASL(byte_t op);
+	void opASL(word_t opIndex, Addressing adr);
+
+	void Branch(word_t opIndex, bool condition);
+	void opBCC(word_t opIndex, Addressing adr);
+	void opBCS(word_t opIndex, Addressing adr);
+	void opBEQ(word_t opIndex, Addressing adr);
+	void opBMI(word_t opIndex, Addressing adr);
+	void opBNE(word_t opIndex, Addressing adr);
+	void opBPL(word_t opIndex, Addressing adr);
+	void opBVC(word_t opIndex, Addressing adr);
+	void opBVS(word_t opIndex, Addressing adr);
+
+	void opBIT(word_t opIndex, Addressing adr);
+	void opBRK(word_t opIndex, Addressing adr);
+
+	void opCLC(word_t opIndex, Addressing adr);
+	void opCLD(word_t opIndex, Addressing adr);
+	void opCLI(word_t opIndex, Addressing adr);
+	void opCLV(word_t opIndex, Addressing adr);
+
+	void Compare(byte_t r, byte_t op);
+	void opCMP(word_t opIndex, Addressing adr);
+	void opCPX(word_t opIndex, Addressing adr);
+	void opCPY(word_t opIndex, Addressing adr);
+
+	void opDEC(word_t opIndex, Addressing adr);
+	void opDEX(word_t opIndex, Addressing adr);
+	void opDEY(word_t opIndex, Addressing adr);
+
+	void opINC(word_t opIndex, Addressing adr);
+	void opINX(word_t opIndex, Addressing adr);
+	void opINY(word_t opIndex, Addressing adr);
+
+	void EOR(byte_t op);
+	void opEOR(word_t opIndex, Addressing adr);
+
+	void opJMP(word_t opIndex, Addressing adr);
+
+	void opJSR(word_t opIndex, Addressing adr);
+	void opRTS(word_t opIndex, Addressing adr);
+
+	void opLDA(word_t opIndex, Addressing adr);
+	void opLDX(word_t opIndex, Addressing adr);
+	void opLDY(word_t opIndex, Addressing adr);
+
+	byte_t LSR(byte_t op);
+	void opLSR(word_t opIndex, Addressing adr);
+
+	void opNOP(word_t opIndex, Addressing adr);
+
+	void ORA(byte_t op);
+	void opORA(word_t opIndex, Addressing adr);
+
+	void opPHA(word_t opIndex, Addressing adr);
+	void opPHP(word_t opIndex, Addressing adr);
+	void opPLA(word_t opIndex, Addressing adr);
+	void opPLP(word_t opIndex, Addressing adr);
+
+	byte_t ROL(byte_t op);
+	void opROL(word_t opIndex, Addressing adr);
+
+	byte_t ROR(byte_t op);
+	void opROR(word_t opIndex, Addressing adr);
+
+	void opRTI(word_t opIndex, Addressing adr);
+
+	void SBC(byte_t op);
+	void opSBC(word_t opIndex, Addressing adr);
+
+	void opSEC(word_t opIndex, Addressing adr);
+	void opSED(word_t opIndex, Addressing adr);
+	void opSEI(word_t opIndex, Addressing adr);
+
+	void opSTA(word_t opIndex, Addressing adr);
+	void opSTX(word_t opIndex, Addressing adr);
+	void opSTY(word_t opIndex, Addressing adr);
+
+	void opTAX(word_t opIndex, Addressing adr);
+	void opTAY(word_t opIndex, Addressing adr);
+	void opTSX(word_t opIndex, Addressing adr);
+	void opTXA(word_t opIndex, Addressing adr);
+	void opTXS(word_t opIndex, Addressing adr);
+	void opTYA(word_t opIndex, Addressing adr);
 };
 } // namespace atre
