@@ -33,7 +33,9 @@ class CPU
   public:
 	CPU(Memory &memory);
 	void Reset();
+	void EntryPoint(word_t startAddr);
 	void Execute();
+	unsigned long Cycles() const;
 
   protected:
 	byte_t A;
@@ -48,8 +50,8 @@ class CPU
 
 	const static flag_t NEGATIVE_FLAG = 0b10000000;
 	const static flag_t OVERFLOW_FLAG = 0b01000000;
-	const static flag_t IGNORED_FLAG = 0b00100000;
-	const static flag_t BREAK_FLAG = 0b00010000;
+	const static flag_t IGNORED_FLAG = 0b00100000; // bit 5
+	const static flag_t BREAK_FLAG = 0b00010000;   // bit 4
 	const static flag_t DECIMAL_FLAG = 0b00001000;
 	const static flag_t INTERRUPT_FLAG = 0b00000100;
 	const static flag_t ZERO_FLAG = 0b00000010;

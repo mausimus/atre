@@ -10,6 +10,8 @@ class Memory
 	byte_t _bytes[MEM_SIZE];
 
   public:
+	void Load(const std::string &fileName, word_t startAddr);
+
 	byte_t Get(word_t addr) const;
 	void Set(word_t addr, byte_t val);
 

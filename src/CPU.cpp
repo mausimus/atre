@@ -10,7 +10,8 @@ CPU::CPU(Memory &memory) : mMemory(memory)
 
 void CPU::Reset()
 {
-	A = X = Y = PC = F = 0;
+	A = X = Y = PC = 0;
+	F = CPU::IGNORED_FLAG;
 	S = 0xFF;
 }
 
@@ -45,24 +46,23 @@ void CPU::StackPush(byte_t val)
 {
 	mMemory.Set(0x100 + S, val);
 	S--;
-	if (S == 0) // wasteful??
+	/*	if (S == 0) // wasteful??
 	{
 		throw std::runtime_error("Stack overflow!");
-	}
+	}*/
 }
 
 byte_t CPU::StackPull()
 {
-	if (S < 0xFF)
+	//if (S < 0xFF)
 	{
-		auto val = mMemory.Get(0x100 + S);
 		S++;
-		return val;
+		return mMemory.Get(0x100 + S);
 	}
-	else
+	/*else
 	{
 		throw std::runtime_error("Empty stack!");
-	}
+	}*/
 }
 
 void CPU::Cycles(unsigned long cycles)
@@ -121,13 +121,18 @@ byte_t CPU::GetOP(word_t opIndex, Addressing adr)
 	}
 	case Addressing::IndexedIndirect:
 	{
-		word_t addr = mMemory.GetW(mMemory.Get(opIndex) + X);
+		word_t baseAddr = (mMemory.Get(opIndex) + X) & 0xFF;
+		word_t loTarget = mMemory.Get(baseAddr);
+		word_t hiTarget = mMemory.Get((baseAddr + 1) & 0xFF);
+		word_t addr = loTarget + (hiTarget << 8);
 		return mMemory.Get(addr);
 	}
 	case Addressing::IndirectIndexed:
 	{
 		byte_t basePointer = mMemory.Get(opIndex);
-		word_t baseAddress = mMemory.GetW(basePointer);
+		word_t loTarget = mMemory.Get(basePointer);
+		word_t hiTarget = mMemory.Get((basePointer + 1) & 0xFF);
+		word_t baseAddress = loTarget + (hiTarget << 8);
 		word_t finalAddress = baseAddress + Y;
 		if (baseAddress >> 8 != finalAddress >> 8)
 		{
@@ -199,14 +204,19 @@ void CPU::SetOP(word_t opIndex, Addressing adr, byte_t val)
 	}
 	case Addressing::IndexedIndirect:
 	{
-		word_t addr = mMemory.GetW(mMemory.Get(opIndex) + X);
+		word_t baseAddr = (mMemory.Get(opIndex) + X) & 0xFF;
+		word_t loTarget = mMemory.Get(baseAddr);
+		word_t hiTarget = mMemory.Get((baseAddr + 1) & 0xFF);
+		word_t addr = loTarget + (hiTarget << 8);
 		mMemory.Set(addr, val);
 		break;
 	}
 	case Addressing::IndirectIndexed:
 	{
 		byte_t basePointer = mMemory.Get(opIndex);
-		word_t baseAddress = mMemory.GetW(basePointer);
+		word_t loTarget = mMemory.Get(basePointer);
+		word_t hiTarget = mMemory.Get((basePointer + 1) & 0xFF);
+		word_t baseAddress = loTarget + (hiTarget << 8);
 		word_t finalAddress = baseAddress + Y;
 		if (baseAddress >> 8 != finalAddress >> 8)
 		{
@@ -352,10 +362,14 @@ void CPU::opBIT(word_t opIndex, Addressing adr)
 // Force Break
 void CPU::opBRK(word_t /*opIndex*/, Addressing /*adr*/)
 {
+	PC++;
 	StackPush(PC >> 8);
 	StackPush(PC & 0xFF);
-	StackPush(F);
+	auto f = F;
+	f |= BREAK_FLAG;
+	StackPush(f);
 	SetFlag(CPU::INTERRUPT_FLAG);
+	PC = mMemory.GetW(0xFFFE); // jump to vector
 }
 
 void CPU::opCLC(word_t /*opIndex*/, Addressing /*adr*/)
@@ -489,7 +503,7 @@ void CPU::opJSR(word_t opIndex, Addressing /*adr*/)
 
 void CPU::opRTS(word_t /*opIndex*/, Addressing /*adr*/)
 {
-	auto retAddress = StackPull();
+	word_t retAddress = StackPull();
 	retAddress += (StackPull() << 8);
 	retAddress++; // we pushed next instruction - 1
 	PC = retAddress;
@@ -553,17 +567,23 @@ void CPU::opPHA(word_t /*opIndex*/, Addressing /*adr*/)
 
 void CPU::opPHP(word_t /*opIndex*/, Addressing /*adr*/)
 {
-	StackPush(F);
+	auto f = F;
+	f |= CPU::BREAK_FLAG;
+	StackPush(f);
 }
 
 void CPU::opPLA(word_t /*opIndex*/, Addressing /*adr*/)
 {
 	A = StackPull();
+	SetFlag(CPU::NEGATIVE_FLAG, IsNegative(A));
+	SetFlag(CPU::ZERO_FLAG, IsZero(A));
 }
 
 void CPU::opPLP(word_t /*opIndex*/, Addressing /*adr*/)
 {
 	F = StackPull();
+	ClearFlag(CPU::BREAK_FLAG);
+	SetFlag(CPU::IGNORED_FLAG);
 }
 
 byte_t CPU::ROL(byte_t op)
@@ -607,7 +627,8 @@ void CPU::opROR(word_t opIndex, Addressing adr)
 void CPU::opRTI(word_t /*opIndex*/, Addressing /*adr*/)
 {
 	F = StackPull();
-	auto retAddress = StackPull();
+	//ClearFlag(CPU::INTERRUPT_FLAG);
+	word_t retAddress = StackPull();
 	retAddress += (StackPull() << 8);
 	PC = retAddress;
 }
@@ -628,13 +649,20 @@ void CPU::SBC(byte_t op)
 	else
 	{
 		sword_t result = A;
-		if (IsSetFlag(CPU::CARRY_FLAG) && op > A)
+		int carry = IsSetFlag(CPU::CARRY_FLAG) ? 1 : 0;
+		if (carry == 1 && static_cast<sbyte_t>(result) < static_cast<sbyte_t>(op))
 		{
-			result += 0x100;
+			SetFlag(CPU::CARRY_FLAG);
+		}
+		else
+		{
 			ClearFlag(CPU::CARRY_FLAG);
 		}
-		result -= op;
-		SetFlag(CPU::OVERFLOW_FLAG, result < -127 || result > 127); // validate this
+
+		result = result - op - (1 - carry);
+		auto sresult = static_cast<sbyte_t>(result) -
+					   static_cast<sbyte_t>(op) - (1 - carry);
+		SetFlag(CPU::OVERFLOW_FLAG, sresult < -128 || sresult > 127);
 		byte_t res = result & 0xFF;
 		SetFlag(CPU::NEGATIVE_FLAG, IsNegative(res));
 		SetFlag(CPU::ZERO_FLAG, IsZero(res));
@@ -681,28 +709,28 @@ void CPU::opTAX(word_t /*opIndex*/, Addressing /*adr*/)
 {
 	X = A;
 	SetFlag(CPU::NEGATIVE_FLAG, IsNegative(X));
-	SetFlag(CPU::NEGATIVE_FLAG, IsZero(X));
+	SetFlag(CPU::ZERO_FLAG, IsZero(X));
 }
 
 void CPU::opTAY(word_t /*opIndex*/, Addressing /*adr*/)
 {
 	Y = A;
 	SetFlag(CPU::NEGATIVE_FLAG, IsNegative(Y));
-	SetFlag(CPU::NEGATIVE_FLAG, IsZero(Y));
+	SetFlag(CPU::ZERO_FLAG, IsZero(Y));
 }
 
 void CPU::opTSX(word_t /*opIndex*/, Addressing /*adr*/)
 {
 	X = S;
 	SetFlag(CPU::NEGATIVE_FLAG, IsNegative(X));
-	SetFlag(CPU::NEGATIVE_FLAG, IsZero(X));
+	SetFlag(CPU::ZERO_FLAG, IsZero(X));
 }
 
 void CPU::opTXA(word_t /*opIndex*/, Addressing /*adr*/)
 {
 	A = X;
 	SetFlag(CPU::NEGATIVE_FLAG, IsNegative(A));
-	SetFlag(CPU::NEGATIVE_FLAG, IsZero(A));
+	SetFlag(CPU::ZERO_FLAG, IsZero(A));
 }
 
 void CPU::opTXS(word_t /*opIndex*/, Addressing /*adr*/)
@@ -714,7 +742,7 @@ void CPU::opTYA(word_t /*opIndex*/, Addressing /*adr*/)
 {
 	A = Y;
 	SetFlag(CPU::NEGATIVE_FLAG, IsNegative(A));
-	SetFlag(CPU::NEGATIVE_FLAG, IsZero(A));
+	SetFlag(CPU::ZERO_FLAG, IsZero(A));
 }
 
 bool CPU::IsNegative(byte_t op)
@@ -929,6 +957,11 @@ void CPU::InitializeOPCodes()
 	_opCodeMap[0x98] = std::make_tuple(&atre::CPU::opTYA, Addressing::None, 1, 2);
 }
 
+void CPU::EntryPoint(word_t startAddr)
+{
+	PC = startAddr;
+}
+
 void CPU::Execute()
 {
 	byte_t code = mMemory.Get(PC);
@@ -943,12 +976,23 @@ void CPU::Execute()
 		PC += std::get<2>(opCode);
 		(this->*func)(opIndex, adr);
 
+		if (PC == opIndex - 1)
+		{
+			// jump to self: trap
+			throw std::runtime_error("Trap!");
+		}
+
 		Cycles(std::get<3>(opCode));
 	}
 	else
 	{
 		throw std::runtime_error("Unsupported OPcode");
 	}
+}
+
+unsigned long CPU::Cycles() const
+{
+	return _cycles;
 }
 
 } // namespace atre

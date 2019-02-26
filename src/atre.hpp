@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <tuple>
 #include <functional>
+#include <fstream>
 
 typedef uint8_t byte_t;
 typedef int8_t sbyte_t;
