@@ -11,6 +11,8 @@ class Tests
 	static void OPTest(CPU &cpu);
 	static void AddrTest(CPU &cpu);
 
+	static void FunctionalTests(CPU &cpu);
+
 	static void Assert(bool mustBeTrue);
 };
 } // namespace atre

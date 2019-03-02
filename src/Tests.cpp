@@ -119,4 +119,15 @@ void Tests::AddrTest(CPU &cpu)
 	cpu.mMemory.Set(0xE453, 9);
 	Assert(cpu.GetOP(0, Addressing::IndexedIndirect) == 9);
 }
+
+void Tests::FunctionalTests(CPU &cpu)
+{
+	cpu.mMemory.Load("6502ft.bin", 0);
+	cpu.EntryPoint(0x0400, 0x3469);
+	for (;;)
+	{
+		//		Debugger::DumpCPU(atari.mCPU);
+		cpu.Execute();
+	};
+}
 } // namespace atre

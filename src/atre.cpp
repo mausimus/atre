@@ -9,19 +9,14 @@ int main(int /*argc*/, char * /*argv*/ [])
 {
 	Atari atari;
 
-	//	Tests::CPUFlagsTest(atari.mCPU);
-	//	Debugger::DumpCPU(atari.mCPU);
-	//Tests::ADC_iTest(atari.mCPU);
-	//	Tests::OPTest(atari.mCPU);
-	//	Tests::AddrTest(atari.mCPU);
-
-	atari.mMemory.Load("6502ft.bin", 0);
-	atari.mCPU.EntryPoint(0x400);
+	atari.mMemory.Load("AllSuiteA.bin", 0x4000);
+	//atari.mCPU.EntryPoint(0x400, 0x3469);
+	atari.mCPU.EntryPoint(0x4000, 0x45C0);
 	do
 	{
 		Debugger::DumpCPU(atari.mCPU);
 		atari.mCPU.Execute();
-	} while (atari.mCPU.Cycles() < 1000000);
+	} while (atari.mCPU.Cycles() < 100000000);
 
 	std::cout << "Done!" << std::endl;
 }

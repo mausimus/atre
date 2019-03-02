@@ -33,7 +33,7 @@ class CPU
   public:
 	CPU(Memory &memory);
 	void Reset();
-	void EntryPoint(word_t startAddr);
+	void EntryPoint(word_t startAddr, word_t endAddr);
 	void Execute();
 	unsigned long Cycles() const;
 
@@ -44,6 +44,7 @@ class CPU
 	byte_t S;
 	word_t PC;
 	byte_t F;
+	word_t EC; // "Exit counter"
 	unsigned long _cycles;
 
 	Memory &mMemory;

@@ -236,15 +236,24 @@ void CPU::ADC(byte_t op)
 	{
 		auto lhr = (A & 15) + (A >> 4) * 10;
 		auto rhr = (op & 15) + (op >> 4) * 10;
-		auto res = lhr + rhr;
-		SetFlag(CPU::OVERFLOW_FLAG, res > 99);
+		auto res = lhr + rhr + (IsSetFlag(CPU::CARRY_FLAG) ? 1 : 0);
+		SetFlag(CPU::CARRY_FLAG, res > 99);
 		res %= 100;
-		A = res;
+		A = ((res / 10) << 4) + (res % 10);
 		SetFlag(CPU::NEGATIVE_FLAG, IsNegative(res));
 		SetFlag(CPU::ZERO_FLAG, IsZero(res));
 	}
 	else
 	{
+		word_t wresult = A + op + (IsSetFlag(CPU::CARRY_FLAG) ? 1 : 0);
+		byte_t res = (byte_t)wresult;
+		SetFlag(CPU::CARRY_FLAG, wresult > 255);
+		SetFlag(CPU::NEGATIVE_FLAG, IsNegative(res));
+		SetFlag(CPU::ZERO_FLAG, IsZero(res));
+		SetFlag(CPU::OVERFLOW_FLAG, IsNegative(A ^ res) & IsNegative(op ^ res));
+		A = res;
+
+		/*
 		word_t result = A;
 		result += op;
 		if (IsSetFlag(CPU::CARRY_FLAG))
@@ -257,6 +266,7 @@ void CPU::ADC(byte_t op)
 		SetFlag(CPU::ZERO_FLAG, IsZero(res));
 		SetFlag(CPU::OVERFLOW_FLAG, IsNegative(A) != IsNegative(res));
 		A = res;
+		*/
 	}
 }
 
@@ -639,34 +649,19 @@ void CPU::SBC(byte_t op)
 	{
 		auto lhr = (A & 15) + (A >> 4) * 10;
 		auto rhr = (op & 15) + (op >> 4) * 10;
-		auto res = lhr - rhr;
-		SetFlag(CPU::OVERFLOW_FLAG, res < 0);
-		res %= 100; // ???
-		A = res;
+		auto res = lhr - rhr - (IsSetFlag(CPU::CARRY_FLAG) ? 0 : 1);
+		SetFlag(CPU::CARRY_FLAG, res >= 0);
+		if (res < 0)
+		{
+			res += 100;
+		}
+		A = ((res / 10) << 4) + (res % 10);
 		SetFlag(CPU::NEGATIVE_FLAG, IsNegative(res));
 		SetFlag(CPU::ZERO_FLAG, IsZero(res));
 	}
 	else
 	{
-		sword_t result = A;
-		int carry = IsSetFlag(CPU::CARRY_FLAG) ? 1 : 0;
-		if (carry == 1 && static_cast<sbyte_t>(result) < static_cast<sbyte_t>(op))
-		{
-			SetFlag(CPU::CARRY_FLAG);
-		}
-		else
-		{
-			ClearFlag(CPU::CARRY_FLAG);
-		}
-
-		result = result - op - (1 - carry);
-		auto sresult = static_cast<sbyte_t>(result) -
-					   static_cast<sbyte_t>(op) - (1 - carry);
-		SetFlag(CPU::OVERFLOW_FLAG, sresult < -128 || sresult > 127);
-		byte_t res = result & 0xFF;
-		SetFlag(CPU::NEGATIVE_FLAG, IsNegative(res));
-		SetFlag(CPU::ZERO_FLAG, IsZero(res));
-		A = res;
+		ADC(op ^ 0xFF);
 	}
 }
 
@@ -957,9 +952,10 @@ void CPU::InitializeOPCodes()
 	_opCodeMap[0x98] = std::make_tuple(&atre::CPU::opTYA, Addressing::None, 1, 2);
 }
 
-void CPU::EntryPoint(word_t startAddr)
+void CPU::EntryPoint(word_t startAddr, word_t endAddr)
 {
 	PC = startAddr;
+	EC = endAddr;
 }
 
 void CPU::Execute()
@@ -980,6 +976,10 @@ void CPU::Execute()
 		{
 			// jump to self: trap
 			throw std::runtime_error("Trap!");
+		}
+		if (PC == EC)
+		{
+			throw std::runtime_error("End reached!");
 		}
 
 		Cycles(std::get<3>(opCode));
