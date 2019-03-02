@@ -33,6 +33,8 @@ class CPU
   public:
 	CPU(Memory &memory);
 	void Reset();
+	void IRQ();
+	void NMI();
 	void EntryPoint(word_t startAddr, word_t endAddr);
 	void Execute();
 	unsigned long Cycles() const;

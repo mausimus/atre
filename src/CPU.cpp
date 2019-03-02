@@ -10,9 +10,10 @@ CPU::CPU(Memory &memory) : mMemory(memory)
 
 void CPU::Reset()
 {
-	A = X = Y = PC = 0;
+	A = X = Y = 0;
 	F = CPU::IGNORED_FLAG;
 	S = 0xFF;
+	PC = 0xFFFC;
 }
 
 void CPU::SetFlag(flag_t flag)
@@ -367,6 +368,28 @@ void CPU::opBIT(word_t opIndex, Addressing adr)
 	SetFlag(CPU::OVERFLOW_FLAG, op & 0b01000000);
 	byte_t res = (A & op);
 	SetFlag(CPU::ZERO_FLAG, IsZero(res));
+}
+
+// external interrupt
+void CPU::IRQ()
+{
+	PC++;
+	StackPush(PC >> 8);
+	StackPush(PC & 0xFF);
+	StackPush(F);
+	SetFlag(CPU::INTERRUPT_FLAG);
+	PC = mMemory.GetW(0xFFFE); // jump to vector
+}
+
+// non-masked interrupt
+void CPU::NMI()
+{
+	PC++;
+	StackPush(PC >> 8);
+	StackPush(PC & 0xFF);
+	StackPush(F);
+	SetFlag(CPU::INTERRUPT_FLAG);
+	PC = mMemory.GetW(0xFFFA); // jump to vector
 }
 
 // Force Break
@@ -975,7 +998,7 @@ void CPU::Execute()
 		if (PC == opIndex - 1)
 		{
 			// jump to self: trap
-			throw std::runtime_error("Trap!");
+			//throw std::runtime_error("Trap!");
 		}
 		if (PC == EC)
 		{

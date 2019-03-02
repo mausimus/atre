@@ -12,7 +12,7 @@ class Memory
   public:
 	void Load(const std::string &fileName, word_t startAddr);
 
-	byte_t Get(word_t addr) const;
+	byte_t Get(word_t addr);
 	void Set(word_t addr, byte_t val);
 
 	word_t GetW(word_t addr) const;

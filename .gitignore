@@ -1,4 +1,5 @@
 bin/atre
+*.o
 *.bin
 *.gch
 *.rom

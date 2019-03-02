@@ -130,4 +130,26 @@ void Tests::FunctionalTests(CPU &cpu)
 		cpu.Execute();
 	};
 }
+
+void Tests::AllSuiteA(CPU &cpu)
+{
+	cpu.mMemory.Load("AllSuiteA.bin", 0x4000);
+	cpu.EntryPoint(0x4000, 0x45C0);
+	for (;;)
+	{
+		//		Debugger::DumpCPU(atari.mCPU);
+		cpu.Execute();
+	};
+}
+
+void Tests::EhBASIC(Atari &atari)
+{
+	atari.mMemory.Load("ehbasic.bin", 0xc000);
+	atari.mCPU.EntryPoint(0xFF80, 0xffff);
+	for (;;)
+	{
+		atari.mCPU.Execute();
+	};
+}
+
 } // namespace atre

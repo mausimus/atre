@@ -12,6 +12,8 @@ class Tests
 	static void AddrTest(CPU &cpu);
 
 	static void FunctionalTests(CPU &cpu);
+	static void AllSuiteA(CPU &cpu);
+	static void EhBASIC(Atari &atari);
 
 	static void Assert(bool mustBeTrue);
 };
