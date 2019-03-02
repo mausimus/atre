@@ -1,8 +1,10 @@
 #include "CPU.hpp"
 
+using namespace std;
+
 namespace atre
 {
-CPU::CPU(Memory &memory) : mMemory(memory)
+CPU::CPU(Memory *memory) : mShowCycles(false), mEnableTraps(true), _cycles(0), _seconds(0), mMemory(memory)
 {
 	InitializeOPCodes();
 	Reset();
@@ -45,30 +47,28 @@ void CPU::SetFlag(flag_t flag, bool isSet)
 
 void CPU::StackPush(byte_t val)
 {
-	mMemory.Set(0x100 + S, val);
+	mMemory->Set(0x100 + S, val);
 	S--;
-	/*	if (S == 0) // wasteful??
-	{
-		throw std::runtime_error("Stack overflow!");
-	}*/
 }
 
 byte_t CPU::StackPull()
 {
-	//if (S < 0xFF)
-	{
-		S++;
-		return mMemory.Get(0x100 + S);
-	}
-	/*else
-	{
-		throw std::runtime_error("Empty stack!");
-	}*/
+	S++;
+	return mMemory->Get(0x100 + S);
 }
 
 void CPU::Cycles(unsigned long cycles)
 {
 	_cycles += cycles;
+	if (_cycles >= CYCLES_PER_SEC)
+	{
+		_seconds++;
+		_cycles -= CYCLES_PER_SEC;
+		if (mShowCycles)
+		{
+			cout << "#" << flush;
+		}
+	}
 }
 
 byte_t CPU::GetOP(word_t opIndex, Addressing adr)
@@ -81,65 +81,65 @@ byte_t CPU::GetOP(word_t opIndex, Addressing adr)
 	}
 	case Addressing::Immediate:
 	{
-		return mMemory.Get(opIndex);
+		return mMemory->Get(opIndex);
 	}
 	case Addressing::Absolute:
 	{
-		word_t addr = mMemory.GetW(opIndex);
-		return mMemory.Get(addr);
+		word_t addr = mMemory->GetW(opIndex);
+		return mMemory->Get(addr);
 	}
 	case Addressing::ZeroPage:
 	{
-		return mMemory.Get(mMemory.Get(opIndex));
+		return mMemory->Get(mMemory->Get(opIndex));
 	}
 	case Addressing::ZeroPageX:
 	{
-		return mMemory.Get((mMemory.Get(opIndex) + X) & 0xFF);
+		return mMemory->Get((mMemory->Get(opIndex) + X) & 0xFF);
 	}
 	case Addressing::ZeroPageY:
 	{
-		return mMemory.Get((mMemory.Get(opIndex) + Y) & 0xFF);
+		return mMemory->Get((mMemory->Get(opIndex) + Y) & 0xFF);
 	}
 	case Addressing::AbsoluteX:
 	{
-		word_t baseAddr = mMemory.GetW(opIndex);
+		word_t baseAddr = mMemory->GetW(opIndex);
 		auto finalAddr = baseAddr + X;
 		if (baseAddr >> 8 != finalAddr >> 8)
 		{
 			Cycles(1);
 		}
-		return mMemory.Get(finalAddr);
+		return mMemory->Get(finalAddr);
 	}
 	case Addressing::AbsoluteY:
 	{
-		word_t baseAddr = mMemory.GetW(opIndex);
+		word_t baseAddr = mMemory->GetW(opIndex);
 		auto finalAddr = baseAddr + Y;
 		if (baseAddr >> 8 != finalAddr >> 8)
 		{
 			Cycles(1);
 		}
-		return mMemory.Get(finalAddr);
+		return mMemory->Get(finalAddr);
 	}
 	case Addressing::IndexedIndirect:
 	{
-		word_t baseAddr = (mMemory.Get(opIndex) + X) & 0xFF;
-		word_t loTarget = mMemory.Get(baseAddr);
-		word_t hiTarget = mMemory.Get((baseAddr + 1) & 0xFF);
+		word_t baseAddr = (mMemory->Get(opIndex) + X) & 0xFF;
+		word_t loTarget = mMemory->Get(baseAddr);
+		word_t hiTarget = mMemory->Get((baseAddr + 1) & 0xFF);
 		word_t addr = loTarget + (hiTarget << 8);
-		return mMemory.Get(addr);
+		return mMemory->Get(addr);
 	}
 	case Addressing::IndirectIndexed:
 	{
-		byte_t basePointer = mMemory.Get(opIndex);
-		word_t loTarget = mMemory.Get(basePointer);
-		word_t hiTarget = mMemory.Get((basePointer + 1) & 0xFF);
+		byte_t basePointer = mMemory->Get(opIndex);
+		word_t loTarget = mMemory->Get(basePointer);
+		word_t hiTarget = mMemory->Get((basePointer + 1) & 0xFF);
 		word_t baseAddress = loTarget + (hiTarget << 8);
 		word_t finalAddress = baseAddress + Y;
 		if (baseAddress >> 8 != finalAddress >> 8)
 		{
 			Cycles(1);
 		}
-		return mMemory.Get(finalAddress);
+		return mMemory->Get(finalAddress);
 	}
 	default:
 		throw std::runtime_error("Not supported addressing mode");
@@ -157,73 +157,73 @@ void CPU::SetOP(word_t opIndex, Addressing adr, byte_t val)
 	}
 	case Addressing::Immediate:
 	{
-		mMemory.Set(opIndex, val);
+		mMemory->Set(opIndex, val);
 		break;
 	}
 	case Addressing::Absolute:
 	{
-		word_t addr = mMemory.GetW(opIndex);
-		mMemory.Set(addr, val);
+		word_t addr = mMemory->GetW(opIndex);
+		mMemory->Set(addr, val);
 		break;
 	}
 	case Addressing::ZeroPage:
 	{
-		mMemory.Set(mMemory.Get(opIndex), val);
+		mMemory->Set(mMemory->Get(opIndex), val);
 		break;
 	}
 	case Addressing::ZeroPageX:
 	{
-		mMemory.Set((mMemory.Get(opIndex) + X) & 0xFF, val);
+		mMemory->Set((mMemory->Get(opIndex) + X) & 0xFF, val);
 		break;
 	}
 	case Addressing::ZeroPageY:
 	{
-		mMemory.Set((mMemory.Get(opIndex) + Y) & 0xFF, val);
+		mMemory->Set((mMemory->Get(opIndex) + Y) & 0xFF, val);
 		break;
 	}
 	case Addressing::AbsoluteX:
 	{
-		word_t baseAddr = mMemory.GetW(opIndex);
+		word_t baseAddr = mMemory->GetW(opIndex);
 		auto finalAddr = baseAddr + X;
 		if (baseAddr >> 8 != finalAddr >> 8)
 		{
 			Cycles(1);
 		}
-		mMemory.Set(finalAddr, val);
+		mMemory->Set(finalAddr, val);
 		break;
 	}
 	case Addressing::AbsoluteY:
 	{
-		word_t baseAddr = mMemory.GetW(opIndex);
+		word_t baseAddr = mMemory->GetW(opIndex);
 		auto finalAddr = baseAddr + Y;
 		if (baseAddr >> 8 != finalAddr >> 8)
 		{
 			Cycles(1);
 		}
-		mMemory.Set(finalAddr, val);
+		mMemory->Set(finalAddr, val);
 		break;
 	}
 	case Addressing::IndexedIndirect:
 	{
-		word_t baseAddr = (mMemory.Get(opIndex) + X) & 0xFF;
-		word_t loTarget = mMemory.Get(baseAddr);
-		word_t hiTarget = mMemory.Get((baseAddr + 1) & 0xFF);
+		word_t baseAddr = (mMemory->Get(opIndex) + X) & 0xFF;
+		word_t loTarget = mMemory->Get(baseAddr);
+		word_t hiTarget = mMemory->Get((baseAddr + 1) & 0xFF);
 		word_t addr = loTarget + (hiTarget << 8);
-		mMemory.Set(addr, val);
+		mMemory->Set(addr, val);
 		break;
 	}
 	case Addressing::IndirectIndexed:
 	{
-		byte_t basePointer = mMemory.Get(opIndex);
-		word_t loTarget = mMemory.Get(basePointer);
-		word_t hiTarget = mMemory.Get((basePointer + 1) & 0xFF);
+		byte_t basePointer = mMemory->Get(opIndex);
+		word_t loTarget = mMemory->Get(basePointer);
+		word_t hiTarget = mMemory->Get((basePointer + 1) & 0xFF);
 		word_t baseAddress = loTarget + (hiTarget << 8);
 		word_t finalAddress = baseAddress + Y;
 		if (baseAddress >> 8 != finalAddress >> 8)
 		{
 			Cycles(1);
 		}
-		mMemory.Set(finalAddress, val);
+		mMemory->Set(finalAddress, val);
 		break;
 	}
 	default:
@@ -253,21 +253,6 @@ void CPU::ADC(byte_t op)
 		SetFlag(CPU::ZERO_FLAG, IsZero(res));
 		SetFlag(CPU::OVERFLOW_FLAG, IsNegative(A ^ res) & IsNegative(op ^ res));
 		A = res;
-
-		/*
-		word_t result = A;
-		result += op;
-		if (IsSetFlag(CPU::CARRY_FLAG))
-		{
-			result++;
-		}
-		byte_t res = result & 0xFF;
-		SetFlag(CPU::CARRY_FLAG, result > 255);
-		SetFlag(CPU::NEGATIVE_FLAG, IsNegative(res));
-		SetFlag(CPU::ZERO_FLAG, IsZero(res));
-		SetFlag(CPU::OVERFLOW_FLAG, IsNegative(A) != IsNegative(res));
-		A = res;
-		*/
 	}
 }
 
@@ -308,7 +293,7 @@ void CPU::Branch(word_t opIndex, bool condition)
 {
 	if (condition)
 	{
-		PC += static_cast<sbyte_t>(mMemory.Get(opIndex));
+		PC += static_cast<sbyte_t>(mMemory->Get(opIndex));
 	}
 }
 
@@ -378,7 +363,7 @@ void CPU::IRQ()
 	StackPush(PC & 0xFF);
 	StackPush(F);
 	SetFlag(CPU::INTERRUPT_FLAG);
-	PC = mMemory.GetW(0xFFFE); // jump to vector
+	PC = mMemory->GetW(0xFFFE); // jump to vector
 }
 
 // non-masked interrupt
@@ -389,7 +374,7 @@ void CPU::NMI()
 	StackPush(PC & 0xFF);
 	StackPush(F);
 	SetFlag(CPU::INTERRUPT_FLAG);
-	PC = mMemory.GetW(0xFFFA); // jump to vector
+	PC = mMemory->GetW(0xFFFA); // jump to vector
 }
 
 // Force Break
@@ -402,7 +387,7 @@ void CPU::opBRK(word_t /*opIndex*/, Addressing /*adr*/)
 	f |= BREAK_FLAG;
 	StackPush(f);
 	SetFlag(CPU::INTERRUPT_FLAG);
-	PC = mMemory.GetW(0xFFFE); // jump to vector
+	PC = mMemory->GetW(0xFFFE); // jump to vector
 }
 
 void CPU::opCLC(word_t /*opIndex*/, Addressing /*adr*/)
@@ -512,13 +497,13 @@ void CPU::opJMP(word_t opIndex, Addressing adr)
 	{
 	case Addressing::Absolute:
 	{
-		PC = mMemory.GetW(opIndex);
+		PC = mMemory->GetW(opIndex);
 		break;
 	}
 	case Addressing::Indirect:
 	{
-		auto addr = mMemory.GetW(opIndex);
-		PC = mMemory.GetW(addr);
+		auto addr = mMemory->GetW(opIndex);
+		PC = mMemory->GetW(addr);
 		break;
 	}
 	default:
@@ -531,7 +516,7 @@ void CPU::opJSR(word_t opIndex, Addressing /*adr*/)
 	auto retAddress = PC - 1; // next instruction - 1
 	StackPush(retAddress >> 8);
 	StackPush(retAddress & 0xFF);
-	PC = mMemory.GetW(opIndex);
+	PC = mMemory->GetW(opIndex);
 }
 
 void CPU::opRTS(word_t /*opIndex*/, Addressing /*adr*/)
@@ -975,15 +960,28 @@ void CPU::InitializeOPCodes()
 	_opCodeMap[0x98] = std::make_tuple(&atre::CPU::opTYA, Addressing::None, 1, 2);
 }
 
-void CPU::EntryPoint(word_t startAddr, word_t endAddr)
+void CPU::JumpTo(word_t startAddr)
 {
 	PC = startAddr;
+	EC = startAddr;
+}
+
+void CPU::ExecuteUntil(word_t endAddr)
+{
 	EC = endAddr;
+	for (;;)
+	{
+		Execute();
+		if (PC == EC)
+		{
+			return;
+		}
+	}
 }
 
 void CPU::Execute()
 {
-	byte_t code = mMemory.Get(PC);
+	byte_t code = mMemory->Get(PC);
 	auto &opCode = _opCodeMap[code];
 	if (std::get<2>(opCode) > 0)
 	{
@@ -995,14 +993,10 @@ void CPU::Execute()
 		PC += std::get<2>(opCode);
 		(this->*func)(opIndex, adr);
 
-		if (PC == opIndex - 1)
+		if (PC == opIndex - 1 && mEnableTraps)
 		{
 			// jump to self: trap
-			//throw std::runtime_error("Trap!");
-		}
-		if (PC == EC)
-		{
-			throw std::runtime_error("End reached!");
+			throw std::runtime_error("Trap!");
 		}
 
 		Cycles(std::get<3>(opCode));
@@ -1015,7 +1009,7 @@ void CPU::Execute()
 
 unsigned long CPU::Cycles() const
 {
-	return _cycles;
+	return (_seconds * CYCLES_PER_SEC) + _cycles;
 }
 
 } // namespace atre

@@ -9,12 +9,14 @@ namespace atre
 class Atari
 {
   public:
-	Atari() : mCPU(mMemory), mMemory()
+	Atari()
 	{
+		mMemory = std::make_unique<Memory>();
+		mCPU = std::make_unique<CPU>(mMemory.get());
 	}
 
-	CPU mCPU;
-	Memory mMemory;
+	std::unique_ptr<CPU> mCPU;
+	std::unique_ptr<Memory> mMemory;
 };
 
 } // namespace atre

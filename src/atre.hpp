@@ -5,6 +5,12 @@
 #include <exception>
 #include <stdexcept>
 #include <tuple>
+#include <map>
+#include <memory>
+#include <deque>
+#include <cstring>
+#include <stdexcept>
+#include <vector>
 #include <functional>
 #include <fstream>
 
@@ -15,3 +21,4 @@ typedef int16_t sword_t;
 typedef byte_t flag_t;
 
 constexpr int MEM_SIZE = 65536;
+constexpr int CYCLES_PER_SEC = 1790000;

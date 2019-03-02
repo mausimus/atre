@@ -5,39 +5,49 @@ using namespace std;
 namespace atre
 {
 
+Memory::Memory() : _ioPorts()
+{
+	Clear();
+}
+
+void Memory::Clear()
+{
+	memset(_bytes, 0, MEM_SIZE);
+}
+
+void Memory::MapIOPort(word_t addr, IOPort *ioPort)
+{
+	_ioPorts.insert(make_pair(addr, ioPort));
+}
+
 byte_t Memory::Get(word_t addr)
 {
-	static int redkar = 0;
-	const string buffer{"C16386\r\n10 FOR I = 1 TO 10\r\n20 PRINT I\r\n30 NEXT I\r\nRUN\r\n"}; // TODO
-	static unsigned int bint = 0;
-
-	auto v = _bytes[addr];
-	if (addr == 0xf004)
+	if (_ioPorts.find(addr) != _ioPorts.end())
 	{
-		if (redkar == 1)
+		auto ioPort = _ioPorts[addr];
+		if (!ioPort->queue.empty())
 		{
-			v = 0;
-			redkar = 0;
+			auto v = ioPort->queue.front();
+			ioPort->queue.pop_front();
+			return v;
 		}
-		else if (bint < buffer.length())
+		else if (ioPort->throwOnEmpty)
 		{
-			v = buffer[bint++];
-			redkar = 1;
+			throw std::out_of_range("IOPort");
 		}
-		else
-		{
-			v = 0;
-		}
+		return 0;
 	}
-	return v;
+
+	return _bytes[addr];
 }
 
 void Memory::Set(word_t addr, byte_t val)
 {
-	if (addr == (word_t)0xf001)
+	if (_ioPorts.find(addr) != _ioPorts.end())
 	{
-		cout << val << flush;
+		_ioPorts[addr]->queue.push_back(val);
 	}
+
 	_bytes[addr] = val;
 }
 

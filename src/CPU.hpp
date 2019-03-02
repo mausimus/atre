@@ -31,13 +31,17 @@ class CPU
 	friend class Tests;
 
   public:
-	CPU(Memory &memory);
+	CPU(Memory *memory);
 	void Reset();
 	void IRQ();
 	void NMI();
-	void EntryPoint(word_t startAddr, word_t endAddr);
+	void JumpTo(word_t startAddr);
 	void Execute();
+	void ExecuteUntil(word_t endAddr);
 	unsigned long Cycles() const;
+
+	bool mShowCycles;
+	bool mEnableTraps;
 
   protected:
 	byte_t A;
@@ -48,8 +52,9 @@ class CPU
 	byte_t F;
 	word_t EC; // "Exit counter"
 	unsigned long _cycles;
+	unsigned long _seconds;
 
-	Memory &mMemory;
+	Memory *mMemory;
 
 	const static flag_t NEGATIVE_FLAG = 0b10000000;
 	const static flag_t OVERFLOW_FLAG = 0b01000000;

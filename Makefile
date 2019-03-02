@@ -6,6 +6,7 @@ OBJ		:= obj
 SRC		:= src
 INCLUDE	:= include
 LIB		:= lib
+PCH		:= src/atre.hpp
 
 LIBRARIES	:=
 
@@ -23,6 +24,9 @@ all: $(BIN)/$(EXECUTABLE)
 clean:
 	$(RM) $(BIN)/$(EXECUTABLE)
 	$(RM) $(OBJ)/*.o
+
+pch:
+	$(CC) $(C_FLAGS) -I$(INCLUDE) -L$(LIB) -w $(PCH)
 
 run: all
 	./$(BIN)/$(EXECUTABLE)
