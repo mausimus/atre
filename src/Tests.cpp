@@ -48,6 +48,21 @@ void Tests::AllSuiteA(Atari &atari)
 	Assert(atari.mMemory->Get(0x0210) == 0xFF);
 }
 
+void Tests::TimingTest(Atari &atari)
+{
+	cout << "Running TimingTest: " << flush;
+
+	atari.mCPU->Reset();
+
+	atari.mMemory->Load("timingtest-1.bin", 0x1000);
+	atari.mCPU->mEnableTraps = true;
+	atari.mCPU->mShowCycles = true;
+	atari.mCPU->JumpTo(0x1000);
+	atari.mCPU->ExecuteUntil(0x1269);
+
+	Assert(atari.mCPU->Cycles() == 1141);
+}
+
 void Tests::EhBASIC(Atari &atari)
 {
 	cout << "Starting EhBasic" << endl;

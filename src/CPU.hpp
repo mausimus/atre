@@ -22,7 +22,10 @@ enum class Addressing
 	IndirectIndexed,
 	Accumulator,
 	Relative,
-	Indirect
+	Indirect,
+	AbsoluteXPaged,
+	AbsoluteYPaged,
+	IndirectIndexedPaged
 };
 
 class CPU

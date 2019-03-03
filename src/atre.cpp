@@ -12,6 +12,7 @@ int main(int /*argc*/, char * /*argv*/ [])
 
 	Tests::FunctionalTest(atari);
 	Tests::AllSuiteA(atari);
+	Tests::TimingTest(atari);
 	Tests::EhBASIC(atari);
 
 	std::cout << "Done!" << std::endl;
