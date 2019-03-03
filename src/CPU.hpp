@@ -2,10 +2,10 @@
 
 #include "atre.hpp"
 #include "Memory.hpp"
+#include "Debugger.hpp"
 
 namespace atre
 {
-class Debugger;
 class Tests;
 
 enum class Addressing
@@ -35,18 +35,18 @@ class CPU
 
   public:
 	CPU(Memory *memory);
+
+	void Attach(Debugger *debugger);
 	void Reset();
 	void IRQ();
 	void NMI();
 	void JumpTo(word_t startAddr);
+	void BreakAt(word_t startAddr);
 	void Execute();
-	void ExecuteUntil(word_t endAddr);
-	void Dump();
 	unsigned long Cycles() const;
 
 	bool mShowCycles;
 	bool mEnableTraps;
-	bool mDumpState;
 
   protected:
 	byte_t A;
@@ -55,13 +55,14 @@ class CPU
 	byte_t S;
 	word_t PC;
 	byte_t F;
-	word_t EC; // "Exit counter"
+	word_t BRK;
 	unsigned long _cycles;
 	unsigned long _seconds;
 	bool _irqPending;
 	bool _nmiPending;
 
 	Memory *mMemory;
+	Debugger *mDebugger;
 
 	const static flag_t NEGATIVE_FLAG = 0b10000000;
 	const static flag_t OVERFLOW_FLAG = 0b01000000;

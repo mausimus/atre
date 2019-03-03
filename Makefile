@@ -8,7 +8,7 @@ INCLUDE	:= include
 LIB		:= lib
 PCH		:= src/atre.hpp
 
-LIBRARIES	:=
+LIBRARIES	:= -pthread -latomic
 
 ifeq ($(OS),Windows_NT)
 EXECUTABLE	:= atre.exe

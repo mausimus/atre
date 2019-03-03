@@ -20,17 +20,15 @@ void Tests::Assert(bool mustBeTrue)
 
 void Tests::FunctionalTest(Atari &atari)
 {
-	cout << "Running FunctionalTest: " << flush;
+	cout << "Loading FunctionalTest" << flush;
 
-	atari.mCPU->Reset();
+	atari.Reset();
 
 	atari.mMemory->Load("6502_functional_test.bin", 0);
 	atari.mCPU->mEnableTraps = true;
 	atari.mCPU->mShowCycles = true;
 	atari.mCPU->JumpTo(0x0400);
-	atari.mCPU->ExecuteUntil(0x3469);
-
-	Assert(true);
+	atari.mCPU->BreakAt(0x3469);
 }
 
 void Tests::InterruptReg(CPU *cpu, byte_t val)
@@ -41,85 +39,68 @@ void Tests::InterruptReg(CPU *cpu, byte_t val)
 
 void Tests::InterruptTest(Atari &atari)
 {
-	cout << "Running InterruptTest: " << flush;
+	cout << "Loading InterruptTest" << flush;
 
-	atari.mCPU->Reset();
+	atari.Reset();
 
 	std::function<void(byte_t)> interruptFunc = std::bind(&Tests::InterruptReg, atari.mCPU.get(), std::placeholders::_1);
 
-	FeedbackRegister interruptRegister(interruptFunc);
-	atari.mMemory->MapFeedbackRegister(0xBFFC, &interruptRegister);
+	auto interruptRegister = make_shared<FeedbackRegister>(interruptFunc);
+	atari.mMemory->MapFeedbackRegister(0xBFFC, interruptRegister);
 
 	atari.mMemory->Load("6502_interrupt_test.bin", 0xa);
 	atari.mCPU->mEnableTraps = true;
 	atari.mCPU->JumpTo(0x0400);
 	atari.mMemory->Set(0xBFFC, 0);
-	atari.mCPU->ExecuteUntil(0x06F5);
-
-	Assert(true);
+	atari.mCPU->BreakAt(0x06F5);
 }
 
 void Tests::AllSuiteA(Atari &atari)
 {
-	cout << "Running AllSuiteA: " << flush;
+	cout << "Loading AllSuiteA" << flush;
 
-	atari.mCPU->Reset();
+	atari.Reset();
 
 	atari.mMemory->Load("AllSuiteA.bin", 0x4000);
 	atari.mCPU->mEnableTraps = true;
 	atari.mCPU->mShowCycles = true;
 	atari.mCPU->JumpTo(0x4000);
-	atari.mCPU->ExecuteUntil(0x45C0);
+	atari.mCPU->BreakAt(0x45C0);
 
-	Assert(atari.mMemory->Get(0x0210) == 0xFF);
+	//Assert(atari.mMemory->Get(0x0210) == 0xFF);
 }
 
 void Tests::TimingTest(Atari &atari)
 {
-	cout << "Running TimingTest: " << flush;
+	cout << "Loading TimingTest" << flush;
 
-	atari.mCPU->Reset();
+	atari.Reset();
 
 	atari.mMemory->Load("timingtest-1.bin", 0x1000);
 	atari.mCPU->mEnableTraps = true;
 	atari.mCPU->mShowCycles = true;
 	atari.mCPU->JumpTo(0x1000);
-	atari.mCPU->ExecuteUntil(0x1269);
+	atari.mCPU->BreakAt(0x1269);
 
-	Assert(atari.mCPU->Cycles() == 1141);
+	//	Assert(atari.mCPU->Cycles() == 1141);
 }
 
-void Tests::EhBASIC(Atari &atari)
+void Tests::EhBASIC(Atari &atari, shared_ptr<IOPort> keyboardInput, shared_ptr<IOPort> screenOutput)
 {
-	cout << "Starting EhBasic" << endl;
+	cout << "Loading EhBasic" << endl;
 
-	atari.mCPU->Reset();
+	atari.Reset();
 
-	IOPort keyboardInput;
-	atari.mCPU->mMemory->MapIOPort(0xF004, &keyboardInput);
-	const string command{"C32768\r\n10 FOR I = 1 TO 10\r\n20 PRINT I\r\n30 NEXT I\r\nRUN\r\n"};
-	for (size_t i = 0; i < command.length(); i++)
-	{
-		keyboardInput.queue.push_back(command[i]);
-	}
+	//	auto keyboardInput = make_shared<IOPort>();
+	atari.mCPU->mMemory->MapIOPort(0xF004, keyboardInput);
 
-	IOPort screenOutput;
-	atari.mCPU->mMemory->MapIOPort(0xF001, &screenOutput);
+	//	auto screenOutput = make_shared<IOPort>();
+	atari.mCPU->mMemory->MapIOPort(0xF001, screenOutput);
 
 	atari.mCPU->mMemory->Load("ehbasic.bin", 0xC000);
 	atari.mCPU->JumpTo(0xFF80);
 	atari.mCPU->mEnableTraps = false;
 	atari.mCPU->mShowCycles = false;
-
-	for (;;)
-	{
-		atari.mCPU->Execute();
-		while (!screenOutput.queue.empty())
-		{
-			cout << screenOutput.queue.front() << flush;
-			screenOutput.queue.pop_front();
-		}
-	};
 }
 
 } // namespace atre

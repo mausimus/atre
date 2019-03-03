@@ -7,6 +7,10 @@
 #include <tuple>
 #include <map>
 #include <memory>
+#include <thread>
+#include <atomic>
+#include <mutex>
+#include <condition_variable>
 #include <deque>
 #include <cstring>
 #include <stdexcept>

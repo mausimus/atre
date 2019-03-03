@@ -1,12 +1,43 @@
 #pragma once
 
-#include "CPU.hpp"
+#include "atre.hpp"
 
 namespace atre
 {
+class Atari;
+class IOPort;
+
 class Debugger
 {
+	Atari *mAtari;
+
+	std::atomic_bool mExiting;
+	std::atomic_bool mStopping;
+	std::mutex mRunningMutex;
+	std::condition_variable mRunning;
+	std::unique_ptr<std::thread> mCPUThread;
+
+	void CPUThread();
+
   public:
-	static void DumpCPU(const CPU &cpu);
+	std::shared_ptr<IOPort> mKeyboardInput;
+	std::shared_ptr<IOPort> mScreenOutput;
+
+	Debugger(Atari *atari);
+	void Initialize();
+	void Exit();
+
+	// CPU callbacks
+	void OnTrap();
+	void OnIRQ();
+	void OnNMI();
+	void OnBRK();
+	void OnReset();
+	void OnBreak();
+
+	void Dump();
+	void Start();
+	void Stop();
+	void Input(const std::string &command);
 };
 } // namespace atre

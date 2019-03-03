@@ -15,6 +15,8 @@ class Atari
 		mCPU = std::make_unique<CPU>(mMemory.get());
 	}
 
+	void Reset();
+
 	std::unique_ptr<CPU> mCPU;
 	std::unique_ptr<Memory> mMemory;
 };

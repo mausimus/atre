@@ -4,18 +4,28 @@ using namespace std;
 
 namespace atre
 {
-CPU::CPU(Memory *memory) : mShowCycles(false), mEnableTraps(true), mDumpState(false), _cycles(0), _seconds(0), mMemory(memory)
+CPU::CPU(Memory *memory) : mShowCycles(false), mEnableTraps(true), _cycles(0), _seconds(0), mMemory(memory), mDebugger(nullptr)
 {
 	InitializeOPCodes();
 	Reset();
 }
 
+void CPU::Attach(Debugger *debugger)
+{
+	mDebugger = debugger;
+}
+
 void CPU::Reset()
 {
+	if (mDebugger)
+	{
+		mDebugger->OnReset();
+	}
 	A = X = Y = 0;
 	F = CPU::IGNORED_FLAG;
 	S = 0xFF;
 	PC = 0xFFFC;
+	BRK = 0xFFFC;
 	_cycles = 0;
 	_seconds = 0;
 	_irqPending = false;
@@ -962,39 +972,11 @@ void CPU::InitializeOPCodes()
 void CPU::JumpTo(word_t startAddr)
 {
 	PC = startAddr;
-	EC = startAddr;
 }
 
-void CPU::ExecuteUntil(word_t endAddr)
+void CPU::BreakAt(word_t breakAddr)
 {
-	EC = endAddr;
-	for (;;)
-	{
-		Execute();
-		if (PC == EC)
-		{
-			return;
-		}
-	}
-}
-
-void CPU::Dump()
-{
-	std::cout << "A = " << std::hex << std::showbase << (int)A << " (" << std::dec << (int)A << "), ";
-	std::cout << "X = " << std::hex << std::showbase << (int)X << " (" << std::dec << (int)X << "), ";
-	std::cout << "Y = " << std::hex << std::showbase << (int)Y << " (" << std::dec << (int)Y << "), ";
-	std::cout << "PC = " << std::hex << std::showbase << (int)PC << ", ";
-	std::cout << "S = " << std::hex << std::showbase << (int)S << ", ";
-	std::cout << "Flags = ";
-	std::cout << (IsSetFlag(CPU::NEGATIVE_FLAG) ? "N" : "n");
-	std::cout << (IsSetFlag(CPU::OVERFLOW_FLAG) ? "O" : "o");
-	std::cout << (IsSetFlag(CPU::IGNORED_FLAG) ? "X" : "x");
-	std::cout << (IsSetFlag(CPU::BREAK_FLAG) ? "B" : "b");
-	std::cout << (IsSetFlag(CPU::DECIMAL_FLAG) ? "D" : "d");
-	std::cout << (IsSetFlag(CPU::INTERRUPT_FLAG) ? "I" : "i");
-	std::cout << (IsSetFlag(CPU::ZERO_FLAG) ? "Z" : "z");
-	std::cout << (IsSetFlag(CPU::CARRY_FLAG) ? "C" : "c");
-	std::cout << " " << std::bitset<8>(F) << std::endl;
+	BRK = breakAddr;
 }
 
 void CPU::Execute()
@@ -1022,15 +1004,15 @@ void CPU::Execute()
 		PC += std::get<2>(opCode);
 		(this->*func)(opIndex, adr);
 
-		if (mDumpState)
+		if (PC == BRK)
 		{
-			Dump();
+			mDebugger->OnBreak();
 		}
 
 		if (PC == opIndex - 1 && mEnableTraps)
 		{
 			// jump to self: trap
-			throw std::runtime_error("Trap!");
+			mDebugger->OnTrap();
 		}
 
 		Cycles(std::get<3>(opCode));

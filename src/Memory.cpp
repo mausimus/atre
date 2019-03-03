@@ -13,14 +13,16 @@ Memory::Memory() : _ioPorts()
 void Memory::Clear()
 {
 	memset(_bytes, 0, MEM_SIZE);
+	_ioPorts.clear();
+	_feedbackRegisters.clear();
 }
 
-void Memory::MapIOPort(word_t addr, IOPort *ioPort)
+void Memory::MapIOPort(word_t addr, shared_ptr<IOPort> ioPort)
 {
 	_ioPorts.insert(make_pair(addr, ioPort));
 }
 
-void Memory::MapFeedbackRegister(word_t addr, FeedbackRegister *feedbackRegister)
+void Memory::MapFeedbackRegister(word_t addr, shared_ptr<FeedbackRegister> feedbackRegister)
 {
 	_feedbackRegisters.insert(make_pair(addr, feedbackRegister));
 }
