@@ -33,6 +33,32 @@ void Tests::FunctionalTest(Atari &atari)
 	Assert(true);
 }
 
+void Tests::InterruptReg(CPU *cpu, byte_t val)
+{
+	cpu->_irqPending = val & 1;
+	cpu->_nmiPending = val & 2;
+}
+
+void Tests::InterruptTest(Atari &atari)
+{
+	cout << "Running InterruptTest: " << flush;
+
+	atari.mCPU->Reset();
+
+	std::function<void(byte_t)> interruptFunc = std::bind(&Tests::InterruptReg, atari.mCPU.get(), std::placeholders::_1);
+
+	FeedbackRegister interruptRegister(interruptFunc);
+	atari.mMemory->MapFeedbackRegister(0xBFFC, &interruptRegister);
+
+	atari.mMemory->Load("6502_interrupt_test.bin", 0xa);
+	atari.mCPU->mEnableTraps = true;
+	atari.mCPU->JumpTo(0x0400);
+	atari.mMemory->Set(0xBFFC, 0);
+	atari.mCPU->ExecuteUntil(0x06F5);
+
+	Assert(true);
+}
+
 void Tests::AllSuiteA(Atari &atari)
 {
 	cout << "Running AllSuiteA: " << flush;

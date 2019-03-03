@@ -4,7 +4,7 @@ using namespace std;
 
 namespace atre
 {
-CPU::CPU(Memory *memory) : mShowCycles(false), mEnableTraps(true), _cycles(0), _seconds(0), mMemory(memory)
+CPU::CPU(Memory *memory) : mShowCycles(false), mEnableTraps(true), mDumpState(false), _cycles(0), _seconds(0), mMemory(memory)
 {
 	InitializeOPCodes();
 	Reset();
@@ -18,6 +18,8 @@ void CPU::Reset()
 	PC = 0xFFFC;
 	_cycles = 0;
 	_seconds = 0;
+	_irqPending = false;
+	_nmiPending = false;
 }
 
 void CPU::SetFlag(flag_t flag)
@@ -357,7 +359,6 @@ void CPU::opBIT(word_t opIndex, Addressing adr)
 // external interrupt
 void CPU::IRQ()
 {
-	PC++;
 	StackPush(PC >> 8);
 	StackPush(PC & 0xFF);
 	StackPush(F);
@@ -368,7 +369,6 @@ void CPU::IRQ()
 // non-masked interrupt
 void CPU::NMI()
 {
-	PC++;
 	StackPush(PC >> 8);
 	StackPush(PC & 0xFF);
 	StackPush(F);
@@ -978,8 +978,38 @@ void CPU::ExecuteUntil(word_t endAddr)
 	}
 }
 
+void CPU::Dump()
+{
+	std::cout << "A = " << std::hex << std::showbase << (int)A << " (" << std::dec << (int)A << "), ";
+	std::cout << "X = " << std::hex << std::showbase << (int)X << " (" << std::dec << (int)X << "), ";
+	std::cout << "Y = " << std::hex << std::showbase << (int)Y << " (" << std::dec << (int)Y << "), ";
+	std::cout << "PC = " << std::hex << std::showbase << (int)PC << ", ";
+	std::cout << "S = " << std::hex << std::showbase << (int)S << ", ";
+	std::cout << "Flags = ";
+	std::cout << (IsSetFlag(CPU::NEGATIVE_FLAG) ? "N" : "n");
+	std::cout << (IsSetFlag(CPU::OVERFLOW_FLAG) ? "O" : "o");
+	std::cout << (IsSetFlag(CPU::IGNORED_FLAG) ? "X" : "x");
+	std::cout << (IsSetFlag(CPU::BREAK_FLAG) ? "B" : "b");
+	std::cout << (IsSetFlag(CPU::DECIMAL_FLAG) ? "D" : "d");
+	std::cout << (IsSetFlag(CPU::INTERRUPT_FLAG) ? "I" : "i");
+	std::cout << (IsSetFlag(CPU::ZERO_FLAG) ? "Z" : "z");
+	std::cout << (IsSetFlag(CPU::CARRY_FLAG) ? "C" : "c");
+	std::cout << " " << std::bitset<8>(F) << std::endl;
+}
+
 void CPU::Execute()
 {
+	if (_nmiPending)
+	{
+		NMI();
+		_nmiPending = false;
+		return;
+	}
+	if (_irqPending && !CPU::IsSetFlag(CPU::INTERRUPT_FLAG))
+	{
+		IRQ();
+		return;
+	}
 	byte_t code = mMemory->Get(PC);
 	auto &opCode = _opCodeMap[code];
 	if (std::get<2>(opCode) > 0)
@@ -991,6 +1021,11 @@ void CPU::Execute()
 		// PC already points to next instruction
 		PC += std::get<2>(opCode);
 		(this->*func)(opIndex, adr);
+
+		if (mDumpState)
+		{
+			Dump();
+		}
 
 		if (PC == opIndex - 1 && mEnableTraps)
 		{

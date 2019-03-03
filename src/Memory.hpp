@@ -15,10 +15,24 @@ class IOPort
 	bool throwOnEmpty;
 };
 
+class FeedbackRegister
+{
+  public:
+	FeedbackRegister(
+		std::function<void(byte_t)> callback
+		/*void (*callback)(byte_t val)*/)
+		: writeFunc(callback)
+	{
+	}
+	std::function<void(byte_t)> writeFunc;
+	//	void (*writeFunc)(byte_t val);
+};
+
 class Memory
 {
 	byte_t _bytes[MEM_SIZE];
 	std::map<word_t, IOPort *> _ioPorts;
+	std::map<word_t, FeedbackRegister *> _feedbackRegisters;
 
   public:
 	Memory();
@@ -26,6 +40,7 @@ class Memory
 
 	void Load(const std::string &fileName, word_t startAddr);
 	void MapIOPort(word_t addr, IOPort *ioPort);
+	void MapFeedbackRegister(word_t addr, FeedbackRegister *feedbackRegister);
 
 	byte_t Get(word_t addr);
 	void Set(word_t addr, byte_t val);

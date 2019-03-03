@@ -41,10 +41,12 @@ class CPU
 	void JumpTo(word_t startAddr);
 	void Execute();
 	void ExecuteUntil(word_t endAddr);
+	void Dump();
 	unsigned long Cycles() const;
 
 	bool mShowCycles;
 	bool mEnableTraps;
+	bool mDumpState;
 
   protected:
 	byte_t A;
@@ -56,6 +58,8 @@ class CPU
 	word_t EC; // "Exit counter"
 	unsigned long _cycles;
 	unsigned long _seconds;
+	bool _irqPending;
+	bool _nmiPending;
 
 	Memory *mMemory;
 

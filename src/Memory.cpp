@@ -20,6 +20,11 @@ void Memory::MapIOPort(word_t addr, IOPort *ioPort)
 	_ioPorts.insert(make_pair(addr, ioPort));
 }
 
+void Memory::MapFeedbackRegister(word_t addr, FeedbackRegister *feedbackRegister)
+{
+	_feedbackRegisters.insert(make_pair(addr, feedbackRegister));
+}
+
 byte_t Memory::Get(word_t addr)
 {
 	if (_ioPorts.find(addr) != _ioPorts.end())
@@ -46,6 +51,10 @@ void Memory::Set(word_t addr, byte_t val)
 	if (_ioPorts.find(addr) != _ioPorts.end())
 	{
 		_ioPorts[addr]->queue.push_back(val);
+	}
+	if (_feedbackRegisters.find(addr) != _feedbackRegisters.end())
+	{
+		_feedbackRegisters[addr]->writeFunc(val);
 	}
 
 	_bytes[addr] = val;

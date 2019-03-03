@@ -11,6 +11,7 @@
 #include <cstring>
 #include <stdexcept>
 #include <vector>
+#include <bitset>
 #include <functional>
 #include <fstream>
 

@@ -11,6 +11,7 @@ int main(int /*argc*/, char * /*argv*/ [])
 	Atari atari;
 
 	Tests::FunctionalTest(atari);
+	Tests::InterruptTest(atari);
 	Tests::AllSuiteA(atari);
 	Tests::TimingTest(atari);
 	Tests::EhBASIC(atari);
