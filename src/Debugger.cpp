@@ -140,4 +140,38 @@ void Debugger::CPUThread()
 	//cout << "Exiting CPU thread" << endl;
 }
 
+void Debugger::DumpReg(const string &fileName)
+{
+	std::ofstream ofs(fileName, std::ios_base::binary);
+
+	if (!ofs.good())
+	{
+		throw std::runtime_error("Unable to open file");
+	}
+
+	ofs.write(reinterpret_cast<char *>(
+				  mAtari->mMemory->_bytes) +
+				  0xD000,
+			  0x0800);
+
+	ofs.close();
+}
+
+void Debugger::VBlank()
+{
+	int i = 500;
+	while (i-- > 0)
+	{
+		mAtari->mMemory->Set(0xD40F, 0b01011111);
+		mAtari->mCPU->_nmiPending = true;
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+	}
+	cout << "Vblanks sent" << endl;
+}
+
+void Debugger::DList()
+{
+	mAtari->mMemory->Set(0xD40F, 0b10011111);
+	mAtari->mCPU->_nmiPending = true;
+}
 } // namespace atre

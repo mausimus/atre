@@ -103,4 +103,20 @@ void Tests::EhBASIC(Atari &atari, shared_ptr<IOPort> keyboardInput, shared_ptr<I
 	atari.mCPU->mShowCycles = false;
 }
 
+void Tests::Boot(Atari &atari)
+{
+	atari.mCPU->mMemory->Clear();
+	atari.mCPU->mMemory->Load("REV02.ROM", 0xC000);
+	atari.mCPU->mMemory->Move(0xD000, 0x5000, 0x0800);
+	atari.mCPU->mMemory->Load("REVC.ROM", 0xA000);
+	atari.mCPU->mMemory->Set(0xD301, 0b00000001); // PORTB ROM map
+	atari.mCPU->mMemory->Set(0xD014, 0b00000001); // PAL
+	atari.mCPU->mMemory->Set(0XD01F, 7);		  // depress console keys
+	atari.mCPU->mMemory->mLockROM = true;
+	atari.mCPU->mEnableTraps = true;
+	atari.mCPU->mShowCycles = true;
+	atari.mCPU->Reset();
+	atari.mCPU->BreakAt(0xA000);
+}
+
 } // namespace atre

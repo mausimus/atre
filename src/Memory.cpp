@@ -5,7 +5,7 @@ using namespace std;
 namespace atre
 {
 
-Memory::Memory() : _ioPorts()
+Memory::Memory() : _ioPorts(), mLockROM(false)
 {
 	Clear();
 }
@@ -15,6 +15,13 @@ void Memory::Clear()
 	memset(_bytes, 0, MEM_SIZE);
 	_ioPorts.clear();
 	_feedbackRegisters.clear();
+}
+
+void Memory::Move(word_t startAddr, word_t destAddr, word_t size)
+{
+	memcpy(reinterpret_cast<char *>(_bytes) + destAddr,
+		   reinterpret_cast<char *>(_bytes) + startAddr, size);
+	memset(reinterpret_cast<char *>(_bytes) + startAddr, 0, size);
 }
 
 void Memory::MapIOPort(word_t addr, shared_ptr<IOPort> ioPort)
@@ -29,6 +36,11 @@ void Memory::MapFeedbackRegister(word_t addr, shared_ptr<FeedbackRegister> feedb
 
 byte_t Memory::Get(word_t addr)
 {
+	if (addr == 0xD01F)
+	{
+		// CONSOL hack
+		return 7;
+	}
 	if (_ioPorts.find(addr) != _ioPorts.end())
 	{
 		auto ioPort = _ioPorts[addr];
@@ -50,6 +62,19 @@ byte_t Memory::Get(word_t addr)
 
 void Memory::Set(word_t addr, byte_t val)
 {
+	if (((addr >= 0xA000 && addr < 0xD000) || addr > 0xD800) && mLockROM)
+	{
+		return;
+	}
+	if (addr == 0xD40F)
+	{
+		_bytes[addr] = 0;
+		return;
+	}
+	if (addr == 0xD014)
+	{
+		return;
+	}
 	if (_ioPorts.find(addr) != _ioPorts.end())
 	{
 		_ioPorts[addr]->queue.push_back(val);

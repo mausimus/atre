@@ -78,6 +78,22 @@ int main(int /*argc*/, char * /*argv*/ [])
 		{
 			debugger.Stop();
 		}
+		else if (command == "boot")
+		{
+			Tests::Boot(atari);
+		}
+		else if (command == "dumpreg")
+		{
+			debugger.DumpReg("d000-d800.bin");
+		}
+		else if (command == "vblank")
+		{
+			debugger.VBlank();
+		}
+		else if (command == "dlist")
+		{
+			debugger.DList();
+		}
 		else if (command == "dump")
 		{
 			debugger.Dump();

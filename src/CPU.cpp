@@ -24,7 +24,7 @@ void CPU::Reset()
 	A = X = Y = 0;
 	F = CPU::IGNORED_FLAG;
 	S = 0xFF;
-	PC = 0xFFFC;
+	PC = mMemory->GetW(0xFFFC);
 	BRK = 0xFFFC;
 	_cycles = 0;
 	_seconds = 0;

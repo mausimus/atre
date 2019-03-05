@@ -27,13 +27,18 @@ class FeedbackRegister
 
 class Memory
 {
+	friend class Debugger;
+
 	byte_t _bytes[MEM_SIZE];
 	std::map<word_t, std::shared_ptr<IOPort>> _ioPorts;
 	std::map<word_t, std::shared_ptr<FeedbackRegister>> _feedbackRegisters;
 
   public:
+	bool mLockROM;
+
 	Memory();
 	void Clear();
+	void Move(word_t startAddr, word_t destAddr, word_t size);
 
 	void Load(const std::string &fileName, word_t startAddr);
 	void MapIOPort(word_t addr, std::shared_ptr<IOPort> ioPort);
