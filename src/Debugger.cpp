@@ -157,6 +157,32 @@ void Debugger::DumpReg(const string &fileName)
 	ofs.close();
 }
 
+void Debugger::Steps(bool steps)
+{
+	mAtari->mCPU->mShowSteps = steps;
+}
+
+void Debugger::DumpMem(const string &fileName)
+{
+	std::ofstream ofs(fileName, std::ios_base::binary);
+
+	if (!ofs.good())
+	{
+		throw std::runtime_error("Unable to open file");
+	}
+
+	byte_t visibleMem[65536];
+	for (int i = 0; i < 65536; i++)
+	{
+		visibleMem[i] = mAtari->mMemory->Get(i);
+	}
+
+	ofs.write(reinterpret_cast<char *>(visibleMem),
+			  0x10000);
+
+	ofs.close();
+}
+
 void Debugger::VBlank()
 {
 	int i = 500;

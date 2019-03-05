@@ -1,18 +1,23 @@
 #include "CPU.hpp"
+#include "Chips.hpp"
 
 using namespace std;
 
 namespace atre
 {
-CPU::CPU(Memory *memory) : mShowCycles(false), mEnableTraps(true), _cycles(0), _seconds(0), mMemory(memory), mDebugger(nullptr)
+CPU::CPU(Memory *memory) : mShowCycles(false), mEnableTraps(true), mShowSteps(false), _cycles(0), _seconds(0), mMemory(memory), mDebugger(nullptr)
 {
 	InitializeOPCodes();
-	Reset();
 }
 
 void CPU::Attach(Debugger *debugger)
 {
 	mDebugger = debugger;
+}
+
+void CPU::Connect(ChipIO *chipIO)
+{
+	mChipIO = chipIO;
 }
 
 void CPU::Reset()
@@ -74,6 +79,10 @@ byte_t CPU::StackPull()
 void CPU::Cycles(unsigned long cycles)
 {
 	_cycles += cycles;
+	while (cycles-- > 0)
+	{
+		mChipIO->Tick();
+	}
 	if (_cycles >= CYCLES_PER_SEC)
 	{
 		_seconds++;
@@ -366,8 +375,18 @@ void CPU::opBIT(word_t opIndex, Addressing adr)
 	SetFlag(CPU::ZERO_FLAG, IsZero(res));
 }
 
-// external interrupt
 void CPU::IRQ()
+{
+	_irqPending = true;
+}
+
+void CPU::NMI()
+{
+	_nmiPending = true;
+}
+
+// external interrupt
+void CPU::doIRQ()
 {
 	StackPush(PC >> 8);
 	StackPush(PC & 0xFF);
@@ -377,7 +396,7 @@ void CPU::IRQ()
 }
 
 // non-masked interrupt
-void CPU::NMI()
+void CPU::doNMI()
 {
 	StackPush(PC >> 8);
 	StackPush(PC & 0xFF);
@@ -1004,6 +1023,11 @@ void CPU::Execute()
 		PC += std::get<2>(opCode);
 		(this->*func)(opIndex, adr);
 
+		if (mShowSteps)
+		{
+			mDebugger->Dump();
+		}
+
 		if (PC == BRK)
 		{
 			mDebugger->OnBreak();
@@ -1025,7 +1049,8 @@ void CPU::Execute()
 
 unsigned long CPU::Cycles() const
 {
-	return (_seconds * CYCLES_PER_SEC) + _cycles;
+	return _cycles;
+	//return (_seconds * CYCLES_PER_SEC) + _cycles;
 }
 
 } // namespace atre

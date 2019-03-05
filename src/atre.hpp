@@ -26,4 +26,8 @@ typedef int16_t sword_t;
 typedef byte_t flag_t;
 
 constexpr int MEM_SIZE = 65536;
-constexpr int CYCLES_PER_SEC = 1790000;
+constexpr int CYCLES_PER_SEC = 1792080;
+constexpr int FRAMES_PER_SEC = 60;
+constexpr int CYCLES_PER_FRAME = CYCLES_PER_SEC / FRAMES_PER_SEC;
+constexpr int NUM_SCANLINES = 262;
+constexpr int CYCLES_PER_SCANLINE = CYCLES_PER_FRAME / NUM_SCANLINES;

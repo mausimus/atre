@@ -86,6 +86,22 @@ int main(int /*argc*/, char * /*argv*/ [])
 		{
 			debugger.DumpReg("d000-d800.bin");
 		}
+		else if (command == "dumpmem")
+		{
+			debugger.DumpMem("atre-mem.bin");
+		}
+		else if (command == "steps on")
+		{
+			debugger.Steps(true);
+		}
+		else if (command == "selftest")
+		{
+			Tests::SelfTest(atari);
+		}
+		else if (command == "steps off")
+		{
+			debugger.Steps(false);
+		}
 		else if (command == "vblank")
 		{
 			debugger.VBlank();

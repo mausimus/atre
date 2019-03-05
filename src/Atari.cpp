@@ -5,6 +5,7 @@ namespace atre
 void Atari::Reset()
 {
 	mMemory->Clear();
-	mCPU->Reset();
+	mIO->Reset();
 }
+
 } // namespace atre

@@ -37,6 +37,7 @@ class CPU
 	CPU(Memory *memory);
 
 	void Attach(Debugger *debugger);
+	void Connect(ChipIO *chipIO);
 	void Reset();
 	void IRQ();
 	void NMI();
@@ -47,6 +48,7 @@ class CPU
 
 	bool mShowCycles;
 	bool mEnableTraps;
+	bool mShowSteps;
 
   protected:
 	byte_t A;
@@ -63,6 +65,7 @@ class CPU
 
 	Memory *mMemory;
 	Debugger *mDebugger;
+	ChipIO *mChipIO;
 
 	const static flag_t NEGATIVE_FLAG = 0b10000000;
 	const static flag_t OVERFLOW_FLAG = 0b01000000;
@@ -83,6 +86,9 @@ class CPU
 	void SetFlag(flag_t flag, bool isSet);
 	void ClearFlag(flag_t flag);
 	bool IsSetFlag(flag_t flag) const;
+
+	void doIRQ();
+	void doNMI();
 
 	void StackPush(byte_t val);
 	byte_t StackPull();

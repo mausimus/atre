@@ -38,8 +38,10 @@ class Debugger
 	void Dump();
 	void Start();
 	void Stop();
+	void Steps(bool);
 	void Input(const std::string &command);
 	void DumpReg(const std::string &fileName);
+	void DumpMem(const std::string &fileName);
 
 	// interrupts
 	void VBlank();
