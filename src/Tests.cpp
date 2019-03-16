@@ -1,5 +1,7 @@
 #include "Tests.hpp"
 #include "Debugger.hpp"
+#include "Chips.hpp"
+#include "ANTIC.hpp"
 
 using namespace std;
 
@@ -110,9 +112,8 @@ void Tests::Boot(Atari &atari)
 	atari.mCPU->mEnableTraps = true;
 	atari.mCPU->mShowCycles = true;
 	atari.mCPU->Reset();
-	atari.mCPU->BreakAt(0xA000);
-	//atari.mCPU->BreakAt(0xEAA0);
-	//atari.mCPU->BreakAt(0xC4F0);
+	atari.mCPU->BreakAt(0xFFFF);
+	//atari.mCPU->BreakAt(0xA000); // BASIC
 }
 
 void Tests::SelfTest(Atari &atari)

@@ -2,6 +2,8 @@
 #include <bitset>
 #include "Debugger.hpp"
 #include "Atari.hpp"
+#include "Chips.hpp"
+#include "ANTIC.hpp"
 
 using namespace std;
 
@@ -95,7 +97,8 @@ void Debugger::Stop()
 
 void Debugger::Input(const string &command)
 {
-	for (size_t i = 0; i < command.length(); i++)
+	mAtari->mIO->KeyboardInput(command);
+	/*	for (size_t i = 0; i < command.length(); i++)
 	{
 		if (command[i] == '\\' && i < command.length() - 1)
 		{
@@ -118,7 +121,7 @@ void Debugger::Input(const string &command)
 		{
 			mKeyboardInput->queue.push_back(command[i]);
 		}
-	}
+	}*/
 }
 
 void Debugger::CPUThread()

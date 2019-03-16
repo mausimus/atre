@@ -5,10 +5,11 @@ BIN		:= bin
 OBJ		:= obj
 SRC		:= src
 INCLUDE	:= include
+SDL2	:= /usr/include/SDL2
 LIB		:= lib
 PCH		:= src/atre.hpp
 
-LIBRARIES	:= -pthread -latomic
+LIBRARIES	:= -pthread -latomic -lSDL2
 
 ifeq ($(OS),Windows_NT)
 EXECUTABLE	:= atre.exe
@@ -32,7 +33,7 @@ run: all
 	./$(BIN)/$(EXECUTABLE)
 
 $(OBJ)/%.o: $(SRC)/%.cpp
-	$(CC) $(C_FLAGS) -I$(INCLUDE) -L$(LIB) -o $@ -c $<
+	$(CC) $(C_FLAGS) -I$(INCLUDE) -I$(SDL2) -L$(LIB) -o $@ -c $<
 
 $(BIN)/$(EXECUTABLE): $(obj)
-	$(CC) $(C_FLAGS) -I$(INCLUDE) -L$(LIB) $^ -o $@ $(LIBRARIES)
+	$(CC) $(C_FLAGS) -I$(INCLUDE) -I$(SDL2) -L$(LIB) $^ -o $@ $(LIBRARIES)

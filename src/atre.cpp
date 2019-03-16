@@ -2,6 +2,10 @@
 #include "Atari.hpp"
 #include "Tests.hpp"
 #include "Debugger.hpp"
+#include "Chips.hpp"
+#include "ANTIC.hpp"
+
+//#include <SDL.h>
 
 using namespace atre;
 using namespace std;
@@ -81,6 +85,7 @@ int main(int /*argc*/, char * /*argv*/ [])
 		else if (command == "boot")
 		{
 			Tests::Boot(atari);
+			debugger.Start();
 		}
 		else if (command == "dumpreg")
 		{
