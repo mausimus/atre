@@ -19,7 +19,10 @@ enum ChipRegisters
 	STIMER = 0xD209,
 	KBCODE = 0xD209,
 	IRQEN = 0xD20E,
-	IRQST = 0xD20F,
+	IRQST = 0xD20E,
+	SEROUT = 0xD20D,
+	SERIN = 0xD20D,
+	SKSTAT = 0xD20F,
 
 	// PIA
 	PORTB = 0xD301,
@@ -28,7 +31,9 @@ enum ChipRegisters
 	VCOUNT = 0xD40B,
 	NMIEN = 0xD40E,
 	NMIST = 0xD40F,
-	NMIRES = 0xD40F
+	NMIRES = 0xD40F,
+	DLISTL = 0xD402,
+	DMACTL = 0xD400
 };
 
 class Chip
@@ -70,11 +75,17 @@ class ANTIC : public Chip
 
 class POKEY : public Chip
 {
+	std::vector<byte_t> _serialOut;
+	byte_t _irqStatus;
+	bool _sioComplete;
+
   public:
-	POKEY(CPU *cpu, Memory *memory) : Chip(cpu, memory) {}
+	POKEY(CPU *cpu, Memory *memory) : Chip(cpu, memory), _serialOut(),
+									  _irqStatus(0), _sioComplete(false) {}
 
 	void Write(word_t reg, byte_t val) override;
 	byte_t Read(word_t reg) override;
+	void Tick() override;
 };
 
 class PIA : public Chip

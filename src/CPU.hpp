@@ -49,6 +49,7 @@ class CPU
 	bool mShowCycles;
 	bool mEnableTraps;
 	bool mShowSteps;
+	std::vector<std::pair<word_t, std::string>> mCallStack;
 
   protected:
 	byte_t A;

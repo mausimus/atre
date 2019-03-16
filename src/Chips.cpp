@@ -19,17 +19,20 @@ void ChipIO::Write(word_t addr, byte_t val)
 	}
 	if (addr < 0xD200)
 	{
-		_GTIA.Write(addr & 0x1F, val);
+		_GTIA.Write(addr /*0xD000 + (addr & 0x1F)*/, val);
+		return;
 	}
 	if (addr < 0xD300)
 	{
-		_POKEY.Write(addr & 0xF, val);
+		_POKEY.Write(addr /*0xD200 + (addr & 0xF)*/, val);
+		return;
 	}
 	if (addr < 0xD400)
 	{
-		_PIA.Write(addr & 0x3, val);
+		_PIA.Write(addr /*0xD300 + (addr & 0x3)*/, val);
+		return;
 	}
-	_ANTIC.Write(addr & 0xF, val);
+	_ANTIC.Write(addr /*0xD400 + (addr & 0xF)*/, val);
 }
 
 byte_t ChipIO::Read(word_t addr)
@@ -88,10 +91,15 @@ void GTIA::Write(word_t addr, byte_t val)
 {
 	switch (addr)
 	{
+	case ChipRegisters::CONSOL:
+	{
+		int x = 4;
+		x++;
+	}
+	break;
 	case ChipRegisters::COLBK:
 	case ChipRegisters::PRIOR:
 	case ChipRegisters::VDELAY:
-	case ChipRegisters::CONSOL:
 	default:
 		mMemory->DirectSet(addr, val);
 		break;
@@ -104,8 +112,10 @@ byte_t POKEY::Read(word_t addr)
 	{
 	case ChipRegisters::KBCODE:
 		return 0;
-	case ChipRegisters::IRQST:
+	case ChipRegisters::SKSTAT:
 		return 0;
+	case ChipRegisters::IRQST:
+		return ~_irqStatus;
 	default:
 		break;
 	}
@@ -117,11 +127,49 @@ void POKEY::Write(word_t addr, byte_t val)
 {
 	switch (addr)
 	{
+	case ChipRegisters::SEROUT:
+		_sioComplete = false;
+		for (int i = 0; i < 20; i++)
+		{
+			// 20 cycles per byte?
+			_serialOut.push_back(val);
+		}
+		break;
 	case ChipRegisters::IRQEN:
+		_irqStatus &= val; // clear any pendng interrupts
+		if (_sioComplete)
+		{
+			_irqStatus |= 0b1000; // always set serial status
+		}
+		mMemory->DirectSet(addr, val);
+		break;
 	case ChipRegisters::STIMER:
 	default:
 		mMemory->DirectSet(addr, val);
 		break;
+	}
+}
+
+void POKEY::Tick()
+{
+	auto irqen = mMemory->DirectGet(ChipRegisters::IRQEN);
+	if (_serialOut.size() > 1)
+	{
+		_serialOut.pop_back();
+	}
+	else if (_serialOut.size() == 1)
+	{
+		_serialOut.clear();
+		_sioComplete = true;
+		if (irqen & 0b10000)
+		{
+			_irqStatus |= 0b10000;
+			mCPU->IRQ(); // serial output ready
+		}
+	}
+	if (_sioComplete && (irqen & 0b1000))
+	{
+		mCPU->IRQ(); // serial output complete
 	}
 }
 

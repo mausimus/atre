@@ -25,6 +25,15 @@ void Debugger::Exit()
 	mCPUThread->join();
 }
 
+void Debugger::DumpCallStack()
+{
+	for (auto s : mAtari->mCPU->mCallStack)
+	{
+		cout << hex << s.first << " (" << s.second << ")" << endl;
+	}
+	cout << hex << mAtari->mCPU->PC << " (PC)" << endl;
+}
+
 void Debugger::Dump()
 {
 	const CPU &cpu = *(mAtari->mCPU);
@@ -199,5 +208,127 @@ void Debugger::DList()
 {
 	mAtari->mMemory->Set(0xD40F, 0b10011111);
 	mAtari->mCPU->_nmiPending = true;
+}
+
+void Debugger::DumpDList()
+{
+	word_t listStart = mAtari->mMemory->GetW(ChipRegisters::DLISTL);
+	word_t listAddr = listStart;
+	word_t lmsAddr = 0;
+	do
+	{
+		byte_t ai = mAtari->mMemory->Get(listAddr);
+		byte_t mode = ai & 0b1111;
+		bool DLI = ai & 0b10000000;
+		bool LMS = ai & 0b01000000;
+		bool VS = ai & 0b00100000;
+		bool HS = ai & 0b00010000;
+		switch (mode)
+		{
+		case 0:
+		{
+			auto numBlanks = ((ai >> 4) & 0b111) + 1;
+			cout << "Blank x" << dec << numBlanks;
+			if (DLI)
+			{
+				cout << " (DLI)";
+			}
+			cout << endl;
+			listAddr++;
+			break;
+		}
+		case 0x01:
+		case 0x41:
+		{
+			auto jumpAddr = mAtari->mMemory->GetW(listAddr + 1);
+			cout << (LMS ? "JVB" : "JMP") << " " << hex << jumpAddr << dec << endl;
+			listAddr = jumpAddr;
+			break;
+		}
+		default:
+		{
+			if (LMS)
+			{
+				lmsAddr = mAtari->mMemory->GetW(listAddr + 1);
+			}
+			if (mode < 8)
+			{
+				if (mode == 2)
+				{
+					auto pf = mAtari->mMemory->Get(ChipRegisters::DMACTL) & 0b11;
+					int numChars = 40;
+					if (pf == 1)
+					{
+						numChars = 32;
+					}
+					else if (pf == 3)
+					{
+						numChars = 48;
+					}
+					for (int cn = 0; cn < numChars; cn++)
+					{
+						byte_t bc = mAtari->mMemory->Get(lmsAddr);
+						char c = static_cast<char>((bc & 0x7F) + 0x20);
+						if (isalnum(c))
+						{
+							cout << c;
+						}
+						else
+						{
+							cout << ".";
+						}
+						lmsAddr++;
+					}
+					cout << " Mode 2";
+				}
+				else
+				{
+					cout << "Mode " << hex << (int)mode << dec << " (Char)";
+				}
+			}
+			else
+			{
+				cout << "Mode " << hex << (int)mode << dec << " (Map)";
+			}
+			if (HS)
+			{
+				cout << " (HS)";
+			}
+			if (VS)
+			{
+				cout << " (VS)";
+			}
+			if (LMS)
+			{
+				cout << " (LMS " << hex << lmsAddr << dec << ")";
+				listAddr += 2;
+			}
+			if (DLI)
+			{
+				cout << " (DLI)";
+			}
+			cout << endl;
+
+			listAddr++;
+		}
+		}
+	} while (listAddr != listStart);
+}
+
+void Debugger::BASIC()
+{
+	mAtari->mCPU->JumpTo(0xA000);
+}
+
+void Debugger::SerInt1()
+{
+	mAtari->mMemory->DirectSet(ChipRegisters::IRQST, 0b10000);
+	mAtari->mCPU->IRQ();
+}
+
+void Debugger::SerInt2()
+{
+	mAtari->mMemory->DirectSet(ChipRegisters::IRQST, 0b1000);
+	mAtari->mCPU->IRQ();
 }
 } // namespace atre

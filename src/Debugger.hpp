@@ -36,15 +36,20 @@ class Debugger
 	void OnBreak();
 
 	void Dump();
+	void DumpCallStack();
 	void Start();
 	void Stop();
 	void Steps(bool);
 	void Input(const std::string &command);
 	void DumpReg(const std::string &fileName);
 	void DumpMem(const std::string &fileName);
+	void DumpDList();
+	void BASIC();
 
 	// interrupts
 	void VBlank();
 	void DList();
+	void SerInt1();
+	void SerInt2();
 };
 } // namespace atre

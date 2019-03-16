@@ -46,7 +46,7 @@ int main(int /*argc*/, char * /*argv*/ [])
 		{
 			Tests::TimingTest(atari);
 		}
-		else if (command == "basic")
+		else if (command == "ehbasic")
 		{
 			Tests::EhBASIC(atari, debugger.mKeyboardInput, debugger.mScreenOutput);
 		}
@@ -102,13 +102,33 @@ int main(int /*argc*/, char * /*argv*/ [])
 		{
 			debugger.Steps(false);
 		}
-		else if (command == "vblank")
+		else if (command == "vblank int")
 		{
 			debugger.VBlank();
 		}
-		else if (command == "dlist")
+		else if (command == "dlist int")
 		{
 			debugger.DList();
+		}
+		else if (command == "dumpdlist")
+		{
+			debugger.DumpDList();
+		}
+		else if (command == "callstack")
+		{
+			debugger.DumpCallStack();
+		}
+		else if (command == "basic")
+		{
+			debugger.BASIC();
+		}
+		else if (command == "serint1")
+		{
+			debugger.SerInt1();
+		}
+		else if (command == "serint2")
+		{
+			debugger.SerInt2();
 		}
 		else if (command == "dump")
 		{

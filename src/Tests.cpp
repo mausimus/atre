@@ -111,10 +111,13 @@ void Tests::Boot(Atari &atari)
 	atari.mCPU->mShowCycles = true;
 	atari.mCPU->Reset();
 	atari.mCPU->BreakAt(0xA000);
+	//atari.mCPU->BreakAt(0xEAA0);
+	//atari.mCPU->BreakAt(0xC4F0);
 }
 
 void Tests::SelfTest(Atari &atari)
 {
+	atari.mMemory->DirectSet(ChipRegisters::PORTB, 0b00000001);
 	atari.mCPU->JumpTo(0x5000);
 }
 

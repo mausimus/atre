@@ -5,7 +5,9 @@ using namespace std;
 
 namespace atre
 {
-CPU::CPU(Memory *memory) : mShowCycles(false), mEnableTraps(true), mShowSteps(false), _cycles(0), _seconds(0), mMemory(memory), mDebugger(nullptr)
+CPU::CPU(Memory *memory) : mShowCycles(false), mEnableTraps(true), mShowSteps(false),
+						   mCallStack(),
+						   _cycles(0), _seconds(0), mMemory(memory), mDebugger(nullptr)
 {
 	InitializeOPCodes();
 }
@@ -35,6 +37,8 @@ void CPU::Reset()
 	_seconds = 0;
 	_irqPending = false;
 	_nmiPending = false;
+	mCallStack.clear();
+	mCallStack.push_back(make_pair(PC, "Entry"));
 }
 
 void CPU::SetFlag(flag_t flag)
@@ -393,6 +397,7 @@ void CPU::doIRQ()
 	StackPush(F);
 	SetFlag(CPU::INTERRUPT_FLAG);
 	PC = mMemory->GetW(0xFFFE); // jump to vector
+	mCallStack.push_back(make_pair(PC, "IRQ"));
 }
 
 // non-masked interrupt
@@ -403,6 +408,7 @@ void CPU::doNMI()
 	StackPush(F);
 	SetFlag(CPU::INTERRUPT_FLAG);
 	PC = mMemory->GetW(0xFFFA); // jump to vector
+	mCallStack.push_back(make_pair(PC, "NMI"));
 }
 
 // Force Break
@@ -416,6 +422,7 @@ void CPU::opBRK(word_t /*opIndex*/, Addressing /*adr*/)
 	StackPush(f);
 	SetFlag(CPU::INTERRUPT_FLAG);
 	PC = mMemory->GetW(0xFFFE); // jump to vector
+	mCallStack.push_back(make_pair(PC, "BRK"));
 }
 
 void CPU::opCLC(word_t /*opIndex*/, Addressing /*adr*/)
@@ -545,10 +552,15 @@ void CPU::opJSR(word_t opIndex, Addressing /*adr*/)
 	StackPush(retAddress >> 8);
 	StackPush(retAddress & 0xFF);
 	PC = mMemory->GetW(opIndex);
+	mCallStack.push_back(make_pair(PC, "JSR"));
 }
 
 void CPU::opRTS(word_t /*opIndex*/, Addressing /*adr*/)
 {
+	if (mCallStack.size())
+	{
+		mCallStack.pop_back();
+	}
 	word_t retAddress = StackPull();
 	retAddress += (StackPull() << 8);
 	retAddress++; // we pushed next instruction - 1
@@ -672,6 +684,10 @@ void CPU::opROR(word_t opIndex, Addressing adr)
 
 void CPU::opRTI(word_t /*opIndex*/, Addressing /*adr*/)
 {
+	if (mCallStack.size())
+	{
+		mCallStack.pop_back();
+	}
 	F = StackPull();
 	//ClearFlag(CPU::INTERRUPT_FLAG);
 	word_t retAddress = StackPull();
@@ -1002,13 +1018,22 @@ void CPU::Execute()
 {
 	if (_nmiPending)
 	{
-		NMI();
+		if (mShowSteps)
+		{
+			cout << "NMI" << endl;
+		}
+		doNMI();
 		_nmiPending = false;
 		return;
 	}
 	if (_irqPending && !CPU::IsSetFlag(CPU::INTERRUPT_FLAG))
 	{
-		IRQ();
+		if (mShowSteps)
+		{
+			cout << "IRQ" << endl;
+		}
+		_irqPending = false;
+		doIRQ();
 		return;
 	}
 	byte_t code = mMemory->Get(PC);
