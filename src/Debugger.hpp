@@ -5,7 +5,6 @@
 namespace atre
 {
 class Atari;
-class IOPort;
 
 class Debugger
 {
@@ -16,8 +15,10 @@ class Debugger
 	std::mutex mRunningMutex;
 	std::condition_variable mRunning;
 	std::unique_ptr<std::thread> mCPUThread;
+	std::unique_ptr<std::thread> mIOThread;
 
 	void CPUThread();
+	void IOThread();
 
   public:
 	Debugger(Atari *atari);
@@ -46,7 +47,5 @@ class Debugger
 	// interrupts
 	void VBlank();
 	void DList();
-	void SerInt1();
-	void SerInt2();
 };
 } // namespace atre

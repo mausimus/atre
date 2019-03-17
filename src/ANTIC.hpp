@@ -1,22 +1,16 @@
 #pragma once
 
-#include <SDL.h>
-
 #include "Chips.hpp"
 
 namespace atre
 {
 class ANTIC : public Chip
 {
-	SDL_Window *_window;
-	SDL_Renderer *_renderer;
-	SDL_Texture *_texture;
-
 	word_t _lineNum;
 	word_t _lineCycle;
 
 	// rendering state
-	uint32_t *_fb;
+	uint32_t _frameBuffer[SCREEN_HEIGHT * SCREEN_WIDTH];
 	byte_t _y;
 	byte_t _mode;
 	word_t _width;
@@ -33,6 +27,7 @@ class ANTIC : public Chip
 	ANTIC(CPU *cpu, Memory *memory);
 	~ANTIC();
 
+	uint32_t *GetFrameBuffer() { return _frameBuffer; }
 	void Reset() override;
 	void Tick() override;
 	void Write(word_t reg, byte_t val) override;

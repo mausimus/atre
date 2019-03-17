@@ -123,14 +123,6 @@ int main(int /*argc*/, char * /*argv*/ [])
 		{
 			debugger.BASIC();
 		}
-		else if (command == "serint1")
-		{
-			debugger.SerInt1();
-		}
-		else if (command == "serint2")
-		{
-			debugger.SerInt2();
-		}
 		else if (command == "dump")
 		{
 			debugger.Dump();

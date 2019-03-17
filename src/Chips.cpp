@@ -26,11 +26,7 @@ void GTIA::Write(word_t addr, byte_t val)
 	switch (addr)
 	{
 	case ChipRegisters::CONSOL:
-	{
-		int x = 4;
-		x++;
-	}
-	break;
+		break;
 	case ChipRegisters::COLBK:
 	case ChipRegisters::PRIOR:
 	case ChipRegisters::VDELAY:

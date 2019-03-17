@@ -5,34 +5,13 @@ using namespace std;
 namespace atre
 {
 
-ANTIC::ANTIC(CPU *cpu, Memory *memory) : Chip(cpu, memory), _window(), _renderer(), _texture()
+ANTIC::ANTIC(CPU *cpu, Memory *memory) : Chip(cpu, memory)
 {
-	if (SDL_Init(SDL_INIT_VIDEO) < 0)
-	{
-		printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
-	}
-	_window = SDL_CreateWindow("atre", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 384 * 2, 240 * 2, SDL_WINDOW_SHOWN);
-	_renderer = SDL_CreateRenderer(_window, -1, SDL_RENDERER_ACCELERATED);
-	_texture = SDL_CreateTexture(_renderer, SDL_PIXELFORMAT_ARGB8888,
-								 SDL_TEXTUREACCESS_STREAMING, 384, 240);
-	/*
-	SDL_RendererInfo info;
-	SDL_GetRendererInfo(_renderer, &info);
-	cout << "Renderer name: " << info.name << endl;
-	cout << "Texture formats: " << endl;
-	for (Uint32 i = 0; i < info.num_texture_formats; i++)
-	{
-		cout << SDL_GetPixelFormatName(info.texture_formats[i]) << endl;
-	}
-	*/
+	memset(_frameBuffer, 0, FRAME_SIZE);
 }
 
 ANTIC::~ANTIC()
 {
-	SDL_DestroyTexture(_texture);
-	SDL_DestroyRenderer(_renderer);
-	SDL_DestroyWindow(_window);
-	SDL_Quit();
 }
 
 byte_t ANTIC::Read(word_t addr)
@@ -84,7 +63,7 @@ void ANTIC::Blank(int numLines)
 	while (numLines--)
 	{
 		auto bgColor = mMemory->Get(ChipRegisters::COLBK);
-		auto lineStart = _fb + _y * 384;
+		auto lineStart = _frameBuffer + _y * 384;
 		memset(lineStart, GetRGB(bgColor), 384 * 4);
 		_y++;
 	}
@@ -104,7 +83,7 @@ void ANTIC::CharacterLine()
 	auto numChars = _width / 8;
 	for (int l = 0; l < 8; l++)
 	{
-		auto linePtr = _fb + _y * 384;
+		auto linePtr = _frameBuffer + _y * 384;
 		memset(linePtr, GetRGB(bgColor), blankWidth * 4);
 		for (int n = 0; n < numChars; n++)
 		{
@@ -141,7 +120,7 @@ void ANTIC::CharacterLine()
 
 void ANTIC::RenderDisplayList()
 {
-	_y = 0;
+	_y = TOP_SCANLINES;
 
 	if (!(mMemory->Get(ChipRegisters::DMACTL) & 0b100000))
 	{
@@ -154,13 +133,13 @@ void ANTIC::RenderDisplayList()
 	case 0:
 		return;
 	case 1:
-		_width = 256;
+		_width = PLAYFIELD_NARROW;
 		break;
 	case 2:
-		_width = 320;
+		_width = PLAYFIELD_NORMAL;
 		break;
 	case 3:
-		_width = 384;
+		_width = PLAYFIELD_WIDE;
 		break;
 	}
 
@@ -211,18 +190,7 @@ void ANTIC::RenderDisplayList()
 
 void ANTIC::DrawFrame()
 {
-	int pitch = 0;
-	void *pixelsPtr;
-	if (SDL_LockTexture(_texture, NULL, &pixelsPtr, &pitch))
-	{
-		throw runtime_error("Unable to lock texture");
-	}
-	_fb = reinterpret_cast<uint32_t *>(pixelsPtr);
 	RenderDisplayList();
-	SDL_UnlockTexture(_texture);
-	SDL_RenderCopy(_renderer, _texture, NULL, NULL);
-	SDL_RenderPresent(_renderer);
-	SDL_PollEvent(NULL);
 }
 
 void ANTIC::Tick()
@@ -232,7 +200,7 @@ void ANTIC::Tick()
 	{
 		_lineCycle = 0;
 		_lineNum++;
-		if (_lineNum == NUM_SCANLINES)
+		if (_lineNum == VBLANK_SCANLINE)
 		{
 			_lineNum = 0;
 			DrawFrame();

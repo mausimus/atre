@@ -13,8 +13,9 @@ Debugger::Debugger(Atari *atari) : mAtari(atari), mExiting(false), mStopping(fal
 
 void Debugger::Initialize()
 {
-	mCPUThread = make_unique<thread>(std::bind(&atre::Debugger::CPUThread, this));
 	mAtari->mCPU->Attach(this);
+	mCPUThread = make_unique<thread>(std::bind(&atre::Debugger::CPUThread, this));
+	mIOThread = make_unique<thread>(std::bind(&atre::Debugger::IOThread, this));
 }
 
 void Debugger::Exit()
@@ -23,6 +24,7 @@ void Debugger::Exit()
 	mStopping = true;
 	mRunning.notify_one();
 	mCPUThread->join();
+	mIOThread->join();
 }
 
 void Debugger::DumpCallStack()
@@ -142,6 +144,21 @@ void Debugger::CPUThread()
 		cout << "Stopping CPU execution" << endl;
 	}
 	//cout << "Exiting CPU thread" << endl;
+}
+
+void Debugger::IOThread()
+{
+	//cout << "Starting IO thread" << endl;
+	mAtari->mIO->Initialize();
+	auto tickInterval = chrono::duration<int, std::milli>(MILLISEC_PER_FRAME);
+	while (!mExiting)
+	{
+		//cout << "(IO Thread Step)" << endl;
+		mAtari->mIO->Refresh(!mStopping);
+		this_thread::sleep_for(tickInterval);
+	}
+	mAtari->mIO->Destroy();
+	//cout << "Exiting IO thread" << endl;
 }
 
 void Debugger::DumpReg(const string &fileName)
@@ -315,15 +332,4 @@ void Debugger::BASIC()
 	mAtari->mCPU->JumpTo(0xA000);
 }
 
-void Debugger::SerInt1()
-{
-	mAtari->mMemory->DirectSet(ChipRegisters::IRQST, 0b10000);
-	mAtari->mCPU->IRQ();
-}
-
-void Debugger::SerInt2()
-{
-	mAtari->mMemory->DirectSet(ChipRegisters::IRQST, 0b1000);
-	mAtari->mCPU->IRQ();
-}
 } // namespace atre
