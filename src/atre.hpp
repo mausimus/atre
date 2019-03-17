@@ -18,6 +18,7 @@
 #include <bitset>
 #include <functional>
 #include <fstream>
+#include <unordered_set>
 
 typedef uint8_t byte_t;
 typedef int8_t sbyte_t;

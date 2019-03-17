@@ -151,11 +151,19 @@ void Debugger::IOThread()
 	//cout << "Starting IO thread" << endl;
 	mAtari->mIO->Initialize();
 	auto tickInterval = chrono::duration<int, std::milli>(MILLISEC_PER_FRAME);
+	auto pauseInterval = chrono::duration<int, std::milli>(1000);
 	while (!mExiting)
 	{
 		//cout << "(IO Thread Step)" << endl;
 		mAtari->mIO->Refresh(!mStopping);
-		this_thread::sleep_for(tickInterval);
+		if (mStopping)
+		{
+			this_thread::sleep_for(pauseInterval);
+		}
+		else
+		{
+			this_thread::sleep_for(tickInterval);
+		}
 	}
 	mAtari->mIO->Destroy();
 	//cout << "Exiting IO thread" << endl;
