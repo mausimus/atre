@@ -14,8 +14,6 @@ Debugger::Debugger(Atari *atari) : mAtari(atari), mExiting(false), mStopping(fal
 void Debugger::Initialize()
 {
 	mCPUThread = make_unique<thread>(std::bind(&atre::Debugger::CPUThread, this));
-	mKeyboardInput = make_shared<IOPort>();
-	mScreenOutput = make_shared<IOPort>();
 	mAtari->mCPU->Attach(this);
 }
 
@@ -140,12 +138,6 @@ void Debugger::CPUThread()
 		while (!mStopping)
 		{
 			mAtari->mCPU->Execute();
-
-			while (!mScreenOutput->queue.empty())
-			{
-				cout << mScreenOutput->queue.front() << flush;
-				mScreenOutput->queue.pop_front();
-			}
 		}
 		cout << "Stopping CPU execution" << endl;
 	}

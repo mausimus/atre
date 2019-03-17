@@ -1,5 +1,6 @@
 #include "CPU.hpp"
 #include "Chips.hpp"
+#include "IO.hpp"
 
 using namespace std;
 
@@ -17,9 +18,9 @@ void CPU::Attach(Debugger *debugger)
 	mDebugger = debugger;
 }
 
-void CPU::Connect(ChipIO *chipIO)
+void CPU::Connect(IO *io)
 {
-	mChipIO = chipIO;
+	mIO = io;
 }
 
 void CPU::Reset()
@@ -85,7 +86,7 @@ void CPU::Cycles(unsigned long cycles)
 	_cycles += cycles;
 	while (cycles-- > 0)
 	{
-		mChipIO->Tick();
+		mIO->Tick();
 	}
 	if (_cycles >= CYCLES_PER_SEC)
 	{

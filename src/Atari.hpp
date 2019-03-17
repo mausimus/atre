@@ -2,7 +2,7 @@
 
 #include "CPU.hpp"
 #include "Memory.hpp"
-#include "Chips.hpp"
+#include "IO.hpp"
 
 namespace atre
 {
@@ -14,7 +14,7 @@ class Atari
 
 	void Reset();
 
-	std::unique_ptr<ChipIO> mIO;
+	std::unique_ptr<IO> mIO;
 	std::unique_ptr<CPU> mCPU;
 	std::unique_ptr<Memory> mMemory;
 };

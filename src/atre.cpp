@@ -50,10 +50,6 @@ int main(int /*argc*/, char * /*argv*/ [])
 		{
 			Tests::TimingTest(atari);
 		}
-		else if (command == "ehbasic")
-		{
-			Tests::EhBASIC(atari, debugger.mKeyboardInput, debugger.mScreenOutput);
-		}
 		// prepend with > to send text to input buffer
 		else if (command[0] == '>')
 		{

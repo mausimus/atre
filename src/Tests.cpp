@@ -87,24 +87,6 @@ void Tests::TimingTest(Atari &atari)
 	//	Assert(atari.mCPU->Cycles() == 1141);
 }
 
-void Tests::EhBASIC(Atari &atari, shared_ptr<IOPort> keyboardInput, shared_ptr<IOPort> screenOutput)
-{
-	cout << "Loading EhBasic" << endl;
-
-	atari.Reset();
-
-	//	auto keyboardInput = make_shared<IOPort>();
-	atari.mCPU->mMemory->MapIOPort(0xF004, keyboardInput);
-
-	//	auto screenOutput = make_shared<IOPort>();
-	atari.mCPU->mMemory->MapIOPort(0xF001, screenOutput);
-
-	atari.mCPU->mMemory->Load("ehbasic.bin", 0xC000);
-	atari.mCPU->JumpTo(0xFF80);
-	atari.mCPU->mEnableTraps = false;
-	atari.mCPU->mShowCycles = false;
-}
-
 void Tests::Boot(Atari &atari)
 {
 	atari.Reset();

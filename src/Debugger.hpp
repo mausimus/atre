@@ -20,9 +20,6 @@ class Debugger
 	void CPUThread();
 
   public:
-	std::shared_ptr<IOPort> mKeyboardInput;
-	std::shared_ptr<IOPort> mScreenOutput;
-
 	Debugger(Atari *atari);
 	void Initialize();
 	void Exit();

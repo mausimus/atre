@@ -1,7 +1,5 @@
 #pragma once
 
-#include <SDL.h>
-
 #include "CPU.hpp"
 #include "Memory.hpp"
 
@@ -103,24 +101,6 @@ class PIA : public Chip
 	void Reset() override;
 	void Write(word_t reg, byte_t val) override;
 	byte_t Read(word_t reg) override;
-};
-
-class ChipIO
-{
-  protected:
-	GTIA _GTIA;
-	std::unique_ptr<ANTIC> _ANTIC;
-	POKEY _POKEY;
-	PIA _PIA;
-
-  public:
-	void KeyboardInput(const std::string &input);
-
-	ChipIO(CPU *cpu, Memory *memory);
-	void Tick();
-	void Reset();
-	void Write(word_t reg, byte_t val);
-	byte_t Read(word_t reg);
 };
 
 } // namespace atre

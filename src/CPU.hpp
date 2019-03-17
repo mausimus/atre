@@ -7,6 +7,7 @@
 namespace atre
 {
 class Tests;
+class IO;
 
 enum class Addressing
 {
@@ -37,7 +38,7 @@ class CPU
 	CPU(Memory *memory);
 
 	void Attach(Debugger *debugger);
-	void Connect(ChipIO *chipIO);
+	void Connect(IO *io);
 	void Reset();
 	void IRQ();
 	void NMI();
@@ -66,7 +67,7 @@ class CPU
 
 	Memory *mMemory;
 	Debugger *mDebugger;
-	ChipIO *mChipIO;
+	IO *mIO;
 
 	const static flag_t NEGATIVE_FLAG = 0b10000000;
 	const static flag_t OVERFLOW_FLAG = 0b01000000;

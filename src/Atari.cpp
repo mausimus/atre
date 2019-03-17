@@ -9,7 +9,7 @@ Atari::Atari()
 {
 	mMemory = std::make_unique<Memory>();
 	mCPU = std::make_unique<CPU>(mMemory.get());
-	mIO = std::make_unique<ChipIO>(mCPU.get(), mMemory.get());
+	mIO = std::make_unique<IO>(mCPU.get(), mMemory.get());
 	mMemory->Connect(mIO.get());
 	mCPU->Connect(mIO.get());
 }

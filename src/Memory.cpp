@@ -1,12 +1,13 @@
 #include "Memory.hpp"
 #include "Chips.hpp"
+#include "IO.hpp"
 
 using namespace std;
 
 namespace atre
 {
 
-Memory::Memory() : _ioPorts()
+Memory::Memory()
 {
 	Clear();
 }
@@ -14,13 +15,12 @@ Memory::Memory() : _ioPorts()
 void Memory::Clear()
 {
 	memset(_bytes, 0, MEM_SIZE);
-	_ioPorts.clear();
 	_feedbackRegisters.clear();
 }
 
-void Memory::Connect(ChipIO *chipIO)
+void Memory::Connect(IO *io)
 {
-	_chipIO = chipIO;
+	_IO = io;
 }
 
 void Memory::Move(word_t startAddr, word_t destAddr, word_t size)
@@ -28,11 +28,6 @@ void Memory::Move(word_t startAddr, word_t destAddr, word_t size)
 	memcpy(reinterpret_cast<char *>(_bytes) + destAddr,
 		   reinterpret_cast<char *>(_bytes) + startAddr, size);
 	memset(reinterpret_cast<char *>(_bytes) + startAddr, 0, size);
-}
-
-void Memory::MapIOPort(word_t addr, shared_ptr<IOPort> ioPort)
-{
-	_ioPorts.insert(make_pair(addr, ioPort));
 }
 
 void Memory::MapFeedbackRegister(word_t addr, shared_ptr<FeedbackRegister> feedbackRegister)
@@ -44,7 +39,7 @@ byte_t Memory::Get(word_t addr)
 {
 	if (addr >= 0xD000 && addr < 0xD800)
 	{
-		return _chipIO->Read(addr);
+		return _IO->Read(addr);
 	}
 
 	if (((addr >= 0xC000 && addr < 0xD000) || (addr >= 0xD800)) &&
@@ -61,22 +56,6 @@ byte_t Memory::Get(word_t addr)
 			 (DirectGet(ChipRegisters::PORTB) & 1))
 	{
 		return _osROM[addr - 0x5000 + 0x1000];
-	}
-
-	if (_ioPorts.find(addr) != _ioPorts.end())
-	{
-		auto ioPort = _ioPorts[addr];
-		if (!ioPort->queue.empty())
-		{
-			auto v = ioPort->queue.front();
-			ioPort->queue.pop_front();
-			return v;
-		}
-		else if (ioPort->throwOnEmpty)
-		{
-			throw std::out_of_range("IOPort");
-		}
-		return 0;
 	}
 
 	return _bytes[addr];
@@ -96,7 +75,7 @@ void Memory::Set(word_t addr, byte_t val)
 {
 	if (addr >= 0xD000 && addr < 0xD800)
 	{
-		_chipIO->Write(addr, val);
+		_IO->Write(addr, val);
 		return;
 	}
 
@@ -126,10 +105,6 @@ void Memory::Set(word_t addr, byte_t val)
 		return;
 	}
 
-	if (_ioPorts.find(addr) != _ioPorts.end())
-	{
-		_ioPorts[addr]->queue.push_back(val);
-	}
 	if (_feedbackRegisters.find(addr) != _feedbackRegisters.end())
 	{
 		_feedbackRegisters[addr]->writeFunc(val);

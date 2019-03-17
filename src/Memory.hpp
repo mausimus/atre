@@ -5,17 +5,7 @@
 namespace atre
 {
 
-class ChipIO;
-
-class IOPort
-{
-  public:
-	IOPort() : queue(), throwOnEmpty(false)
-	{
-	}
-	std::deque<byte_t> queue;
-	bool throwOnEmpty;
-};
+class IO;
 
 class FeedbackRegister
 {
@@ -35,9 +25,8 @@ class Memory
 	byte_t _osROM[16386];
 	byte_t _basicROM[8192];
 
-	std::map<word_t, std::shared_ptr<IOPort>> _ioPorts;
 	std::map<word_t, std::shared_ptr<FeedbackRegister>> _feedbackRegisters;
-	ChipIO *_chipIO;
+	IO *_IO;
 
 	void InternalLoad(const std::string &fileName, byte_t *addr);
 
@@ -45,11 +34,10 @@ class Memory
 	Memory();
 	void Clear();
 	void Move(word_t startAddr, word_t destAddr, word_t size);
-	void Connect(ChipIO *chipIO);
+	void Connect(IO *io);
 
 	void Load(const std::string &fileName, word_t startAddr);
 	void LoadROM(const std::string &osFileName, const std::string &basicFileName);
-	void MapIOPort(word_t addr, std::shared_ptr<IOPort> ioPort);
 	void MapFeedbackRegister(word_t addr, std::shared_ptr<FeedbackRegister> feedbackRegister);
 
 	byte_t Get(word_t addr);
