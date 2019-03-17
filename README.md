@@ -21,6 +21,10 @@ Simple 8-bit Atari platform (800XL/65XE) emulator in C++ (_work in progress!_)
 
 ![screenshot](images/screen2.png)
 
+###### Debugger
+
+![screenshot](images/screen3.png)
+
 ### Code
 
 Reference build using GCC in C++ 17 mode on Ubuntu and SDL library for graphics.
