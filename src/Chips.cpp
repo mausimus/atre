@@ -41,10 +41,10 @@ byte_t POKEY::Read(word_t addr)
 	switch (addr)
 	{
 	case ChipRegisters::KBCODE:
-		_irqStatus &= ~(0b01000000);
+		_irqStatus &= ~(0b01000000); // clear IRQ status once read??
 		return _kbCode;
 	case ChipRegisters::SKSTAT:
-		return 0;
+		return _kbStat;
 	case ChipRegisters::IRQST:
 		return ~_irqStatus;
 	default:
@@ -81,19 +81,50 @@ void POKEY::Write(word_t addr, byte_t val)
 	}
 }
 
-map<char, byte_t> POKEY::_scanCodes = {
-	{'p', 0x0A},
-	{'r', 0x28},
-	{'i', 0x0D},
-	{'n', 0x23},
-	{'t', 0x2D},
-	{'a', 0x3F},
-	{'e', 0x2A},
-	{'\r', 0x0C},
-	{'\n', 0x0C},
-	{'"', (0x1E + 0b01000000)},
-	{' ', 0x21},
-	{'f', 0x38}};
+void POKEY::KeyDown(byte_t scanCode, bool shiftStatus, bool ctrlStatus)
+{
+	_kbCode = scanCode;
+
+	if (shiftStatus)
+	{
+		_kbCode |= 0b1000000;
+		_kbStat |= 0b1000;
+	}
+	else
+	{
+		_kbStat &= ~(0b1000);
+	}
+
+	if (ctrlStatus)
+	{
+		_kbCode |= 0b10000000;
+	}
+
+	_kbStat |= 0b100;
+	_keyPressed = true;
+}
+
+void POKEY::KeyUp()
+{
+	_kbStat &= ~(0b100);
+}
+
+void POKEY::Break()
+{
+	_breakPressed = true;
+}
+
+void POKEY::ShiftKey(bool shiftStatus)
+{
+	if (shiftStatus)
+	{
+		_kbStat |= 0b1000;
+	}
+	else
+	{
+		_kbStat &= ~(0b1000);
+	}
+}
 
 void POKEY::KeyboardInput(const std::string &input)
 {
@@ -121,7 +152,27 @@ void POKEY::Tick()
 	{
 		mCPU->IRQ(); // serial output complete
 	}
+	if (_keyPressed)
+	{
+		if ((irqen & 0b1000000))
+		{
+			_irqStatus |= 0b1000000;
+			mCPU->IRQ(); // keypress
+		}
+		_keyPressed = false;
+	}
+	if (_breakPressed)
+	{
+		if ((irqen & 0b10000000))
+		{
+			_irqStatus |= 0b10000000;
+			mCPU->IRQ(); // break
+		}
+		_breakPressed = false;
+	}
+
 	_cycles++;
+	/*
 	if (_cycles == 1000000)
 	{
 		_cycles = 0;
@@ -140,7 +191,7 @@ void POKEY::Tick()
 				}
 			}
 		}
-	}
+	}*/
 	/* TODO: timers
 	_cycles++;
 	if (_cycles == 10000)

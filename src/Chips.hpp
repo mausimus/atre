@@ -74,15 +74,22 @@ class POKEY : public Chip
 	std::vector<byte_t> _serialOut;
 	std::string _keyBuffer; // TODO
 
-	static std::map<char, byte_t> _scanCodes;
+	//	static std::map<char, byte_t> _scanCodes;
 
 	byte_t _irqStatus;
 	byte_t _kbCode;
+	byte_t _kbStat;
 	bool _sioComplete;
+	bool _keyPressed;
+	bool _breakPressed;
 	unsigned long _cycles;
 
   public:
 	void KeyboardInput(const std::string &input);
+	void KeyDown(byte_t scanCode, bool shiftStatus, bool ctrlStatus);
+	void KeyUp();
+	void Break();
+	void ShiftKey(bool shiftStatus);
 
 	POKEY(CPU *cpu, Memory *memory) : Chip(cpu, memory), _serialOut(),
 									  _keyBuffer(),

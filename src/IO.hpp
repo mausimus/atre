@@ -13,6 +13,8 @@ class IO
 	POKEY _POKEY;
 	PIA _PIA;
 
+	static std::map<SDL_Scancode, byte_t> _scanCodes;
+
 	SDL_Window *_window;
 	SDL_Renderer *_renderer;
 	SDL_Texture *_texture;
