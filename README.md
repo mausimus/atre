@@ -28,7 +28,7 @@ Reference build using GCC in C++ 17 mode on Ubuntu and SDL library for graphics.
 In order to boot you will need original Atari OS ROM (_REV02.ROM_) and BASIC ROM (_REVC.ROM_).
 
 The focus of the project is on producing a working version first with optimisations
-and design rationalisation coming later (time-peritting).
+and design rationalisation coming later (time-permitting).
 
 ### Thanks
 
