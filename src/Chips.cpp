@@ -13,7 +13,22 @@ byte_t GTIA::Read(word_t addr)
 	case ChipRegisters::PAL:
 		return 0xF;
 	case ChipRegisters::CONSOL:
-		return 0x7;
+	{
+		byte_t consol = 0;
+		if (!_optionKey)
+		{
+			consol += 1 << 2;
+		}
+		if (!_selectKey)
+		{
+			consol += 1 << 1;
+		}
+		if (!_startKey)
+		{
+			consol += 1;
+		}
+		return consol;
+	}
 	default:
 		break;
 	}

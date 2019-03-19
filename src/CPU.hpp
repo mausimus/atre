@@ -45,6 +45,7 @@ class CPU
 	void JumpTo(word_t startAddr);
 	void BreakAt(word_t startAddr);
 	void Execute();
+	void Wait(unsigned cycles);
 	unsigned long Cycles() const;
 
 	bool mShowCycles;
@@ -64,6 +65,7 @@ class CPU
 	unsigned long _seconds;
 	bool _irqPending;
 	bool _nmiPending;
+	unsigned _waitCycles;
 
 	Memory *mMemory;
 	Debugger *mDebugger;

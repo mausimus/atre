@@ -8,7 +8,7 @@ namespace atre
 {
 CPU::CPU(Memory *memory) : mShowCycles(false), mEnableTraps(true), mShowSteps(false),
 						   mCallStack(),
-						   _cycles(0), _seconds(0), mMemory(memory), mDebugger(nullptr)
+						   _cycles(0), _seconds(0), _waitCycles(0), mMemory(memory), mDebugger(nullptr)
 {
 	InitializeOPCodes();
 }
@@ -21,6 +21,11 @@ void CPU::Attach(Debugger *debugger)
 void CPU::Connect(IO *io)
 {
 	mIO = io;
+}
+
+void CPU::Wait(unsigned cycles)
+{
+	_waitCycles = cycles;
 }
 
 void CPU::Reset()
@@ -1017,6 +1022,11 @@ void CPU::BreakAt(word_t breakAddr)
 
 void CPU::Execute()
 {
+	if (_waitCycles)
+	{
+		_waitCycles--;
+		return;
+	}
 	if (_nmiPending)
 	{
 		if (mShowSteps)

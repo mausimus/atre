@@ -41,7 +41,8 @@ enum ChipRegisters
 	DLISTL = 0xD402,
 	DMACTL = 0xD400,
 	CHBASE = 0xD409,
-	CHACTL = 0xD401
+	CHACTL = 0xD401,
+	WSYNC = 0xD40A
 };
 
 class Chip
@@ -62,11 +63,19 @@ class Chip
 
 class GTIA : public Chip
 {
+	bool _optionKey;
+	bool _selectKey;
+	bool _startKey;
+
   public:
-	GTIA(CPU *cpu, Memory *memory) : Chip(cpu, memory) {}
+	GTIA(CPU *cpu, Memory *memory) : Chip(cpu, memory), _optionKey(), _selectKey(), _startKey() {}
 
 	void Write(word_t reg, byte_t val) override;
 	byte_t Read(word_t reg) override;
+
+	void Option(bool state) { _optionKey = state; };
+	void Select(bool state) { _selectKey = state; };
+	void Start(bool state) { _startKey = state; };
 };
 
 class POKEY : public Chip

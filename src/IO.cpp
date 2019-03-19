@@ -11,6 +11,7 @@ IO::IO(CPU *cpu, Memory *memory) : _GTIA(cpu, memory),
 								   _ANTIC(cpu, memory),
 								   _POKEY(cpu, memory),
 								   _PIA(cpu, memory),
+								   _CPU(cpu),
 								   _window(), _renderer(), _texture()
 {
 }
@@ -94,7 +95,7 @@ map<SDL_Scancode, byte_t> IO::_scanCodes = {
 	{SDL_SCANCODE_PERIOD, 0x22},
 	{SDL_SCANCODE_SLASH, 0x26},
 	{SDL_SCANCODE_CAPSLOCK, 0x3C},
-};
+	{SDL_SCANCODE_F1, 0x11}};
 
 void IO::Refresh(bool cpuRunning)
 {
@@ -123,7 +124,23 @@ void IO::Refresh(bool cpuRunning)
 			{
 				auto shiftStatus = e.key.keysym.mod & KMOD_SHIFT;
 				_POKEY.ShiftKey(shiftStatus);
-				if (e.type == SDL_KEYUP)
+				if (e.key.keysym.scancode == SDL_SCANCODE_F2)
+				{
+					_GTIA.Start(e.type == SDL_KEYDOWN);
+				}
+				else if (e.key.keysym.scancode == SDL_SCANCODE_F3)
+				{
+					_GTIA.Select(e.type == SDL_KEYDOWN);
+				}
+				else if (e.key.keysym.scancode == SDL_SCANCODE_F4)
+				{
+					_GTIA.Option(e.type == SDL_KEYDOWN);
+				}
+				else if (e.key.keysym.scancode == SDL_SCANCODE_F5)
+				{
+					_CPU->Reset();
+				}
+				else if (e.type == SDL_KEYUP)
 				{
 					_POKEY.KeyUp();
 				}

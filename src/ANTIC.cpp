@@ -36,6 +36,14 @@ void ANTIC::Write(word_t addr, byte_t val)
 {
 	switch (addr)
 	{
+	case ChipRegisters::WSYNC:
+		mMemory->DirectSet(addr, val);
+		// wait until cycle 105 of current scanline
+		if (_lineCycle < 104)
+		{
+			mCPU->Wait(104 - _lineCycle);
+		}
+		break;
 	case ChipRegisters::NMIRES:
 		mMemory->DirectSet(ChipRegisters::NMIST, 0);
 		return;

@@ -19,6 +19,8 @@ class IO
 	SDL_Renderer *_renderer;
 	SDL_Texture *_texture;
 
+	CPU *_CPU;
+
   public:
 	void KeyboardInput(const std::string &input);
 
