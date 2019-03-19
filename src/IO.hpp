@@ -12,14 +12,13 @@ class IO
 	ANTIC _ANTIC;
 	POKEY _POKEY;
 	PIA _PIA;
+	CPU *_CPU;
 
 	static std::map<SDL_Scancode, byte_t> _scanCodes;
 
 	SDL_Window *_window;
 	SDL_Renderer *_renderer;
 	SDL_Texture *_texture;
-
-	CPU *_CPU;
 
   public:
 	void KeyboardInput(const std::string &input);

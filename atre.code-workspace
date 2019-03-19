@@ -31,7 +31,28 @@
 			"system_error": "cpp",
 			"type_traits": "cpp",
 			"typeinfo": "cpp",
-			"tuple": "cpp"
+			"tuple": "cpp",
+			"chrono": "cpp",
+			"array": "cpp",
+			"atomic": "cpp",
+			"condition_variable": "cpp",
+			"cstdarg": "cpp",
+			"cstring": "cpp",
+			"ctime": "cpp",
+			"deque": "cpp",
+			"unordered_map": "cpp",
+			"unordered_set": "cpp",
+			"vector": "cpp",
+			"fstream": "cpp",
+			"functional": "cpp",
+			"memory": "cpp",
+			"mutex": "cpp",
+			"optional": "cpp",
+			"ratio": "cpp",
+			"sstream": "cpp",
+			"thread": "cpp",
+			"cinttypes": "cpp",
+			"utility": "cpp"
 		}
 	}
 }

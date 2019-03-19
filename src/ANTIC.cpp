@@ -7,7 +7,7 @@ namespace atre
 
 uint32_t ANTIC::_palette[128] = {0x00000000, 0x00101010, 0x00393939, 0x00636363, 0x007B7B7B, 0x00A5A5A5, 0x00C6C6C6, 0x00EFEFEF, 0x00100000, 0x00312100, 0x005A4200, 0x00846B00, 0x009C8400, 0x00C6AD00, 0x00E7D629, 0x00FFF74A, 0x00310000, 0x005A0800, 0x007B2900, 0x00A55200, 0x00BD6B00, 0x00E79429, 0x00FFB552, 0x00FFDE73, 0x004A0000, 0x006B0000, 0x00941000, 0x00BD3929, 0x00D65242, 0x00FF7B6B, 0x00FFA594, 0x00FFC6B5, 0x004A0000, 0x00730029, 0x0094004A, 0x00BD2973, 0x00D64294, 0x00FF6BB5, 0x00FF94DE, 0x00FFB5FF, 0x0039004A, 0x00630073, 0x008C0094, 0x00AD21BD, 0x00CE42D6, 0x00EF63FF, 0x00FF8CFF, 0x00FFB5FF, 0x0021007B, 0x004200A5, 0x006B00C6, 0x009429EF, 0x00AD42FF, 0x00D66BFF, 0x00F794FF, 0x00FFB5FF, 0x00000094, 0x002100BD, 0x004210DE, 0x006B39FF, 0x008452FF, 0x00AD7BFF, 0x00CE9CFF, 0x00F7C6FF, 0x0000008C, 0x000000B5, 0x001829D6, 0x004252FF, 0x005A6BFF, 0x008494FF, 0x00A5B5FF, 0x00CEDEFF, 0x00000063, 0x0000218C, 0x000042AD, 0x00186BD6, 0x003984F7, 0x005AADFF, 0x0084CEFF, 0x00ADF7FF, 0x00001021, 0x0000394A, 0x00005A73, 0x00008494, 0x00219CB5, 0x004AC6DE, 0x006BE7FF, 0x0094FFFF, 0x00002100, 0x00004A00, 0x00006B21, 0x0000944A, 0x0018AD6B, 0x0042D68C, 0x0063F7B5, 0x008CFFDE, 0x00002900, 0x00004A00, 0x00007300, 0x00109C08, 0x0029B521, 0x0052DE4A, 0x0073FF6B, 0x009CFF94, 0x00002100, 0x00004A00, 0x00006B00, 0x00299400, 0x0042AD00, 0x006BD610, 0x0094FF39, 0x00B5FF5A, 0x00001000, 0x00083900, 0x00296300, 0x00528400, 0x006BA500, 0x0094C600, 0x00B5EF18, 0x00DEFF42, 0x00080000, 0x00312100, 0x00524A00, 0x007B6B00, 0x00948C00, 0x00BDB500, 0x00E7D621, 0x00FFFF4A};
 
-ANTIC::ANTIC(CPU *cpu, Memory *memory) : Chip(cpu, memory), _DLIs()
+ANTIC::ANTIC(CPU *cpu, Memory *memory) : Chip(cpu, memory), _listActive()
 {
 	memset(_frameBuffer, 0, FRAME_SIZE);
 }
@@ -65,8 +65,6 @@ void ANTIC::Reset()
 uint32_t ANTIC::GetRGB(byte_t color) const
 {
 	return _palette[color >> 1];
-	//	auto lum = static_cast<uint32_t>((color & 0b1111) << 4);
-	//	return (lum << 16) + (lum << 8) + lum;
 }
 
 void ANTIC::Blank(int numLines)
@@ -76,10 +74,9 @@ void ANTIC::Blank(int numLines)
 		while (numLines--)
 		{
 			auto bgColor = mMemory->Get(ChipRegisters::COLBK);
-			auto lineStart = _frameBuffer + _y * 384;
-			//		memset(lineStart, GetRGB(bgColor), 384 * 4);
-			Fill(lineStart, GetRGB(bgColor), SCREEN_WIDTH);
-			_y++;
+			auto lineStart = _frameBuffer + _renderLine * FRAME_WIDTH;
+			Fill(lineStart, GetRGB(bgColor), FRAME_WIDTH);
+			_renderLine++;
 		}
 	}
 }
@@ -97,10 +94,10 @@ void ANTIC::MapLine()
 {
 	auto bgColor = mMemory->Get(ChipRegisters::COLBK);
 	auto outsideColor = GetRGB(bgColor);
-	auto blankWidth = (384 - _width) / 2;
+	auto blankWidth = (FRAME_WIDTH - _width) / 2;
 	if (_mode == 0xE)
 	{
-		auto linePtr = _frameBuffer + _y * 384;
+		auto linePtr = _frameBuffer + _renderLine * FRAME_WIDTH;
 		Fill(linePtr, outsideColor, blankWidth);
 
 		for (int i = 0; i < 40; i++)
@@ -134,8 +131,8 @@ void ANTIC::MapLine()
 			}
 		}
 
-		Fill(linePtr + 384 - blankWidth, outsideColor, blankWidth);
-		_y++;
+		Fill(linePtr + FRAME_WIDTH - blankWidth, outsideColor, blankWidth);
+		_renderLine++;
 	}
 }
 
@@ -163,14 +160,14 @@ void ANTIC::CharacterLine()
 		bitHeight = 2;
 	}
 
-	auto blankWidth = (384 - _width) / 2;
+	auto blankWidth = (FRAME_WIDTH - _width) / 2;
 	auto charWidth = 8 * bitWidth;
 	auto numChars = _width / charWidth;
 	for (int l = 0; l < 8; l++)
 	{
 		for (int bh = 0; bh < bitHeight; bh++)
 		{
-			auto linePtr = _frameBuffer + _y * 384;
+			auto linePtr = _frameBuffer + _renderLine * FRAME_WIDTH;
 			Fill(linePtr, outsideColor, blankWidth);
 			for (int n = 0; n < numChars; n++)
 			{
@@ -220,24 +217,47 @@ void ANTIC::CharacterLine()
 					charLine >>= 1;
 				}
 			}
-			Fill(linePtr + 384 - blankWidth, outsideColor, blankWidth);
-			_y++;
+			Fill(linePtr + FRAME_WIDTH - blankWidth, outsideColor, blankWidth);
+			_renderLine++;
 		}
 	}
 	_lmsAddr += numChars;
 }
 
-void ANTIC::RenderDisplayList()
+void ANTIC::StartDisplayList()
 {
-	_y = TOP_SCANLINES;
-	_DLIs.clear();
+	_renderLine = TOP_SCANLINES;
 
 	if (!(mMemory->Get(ChipRegisters::DMACTL) & 0b100000))
+	{
+		_listActive = false;
+		return;
+	}
+
+	_listAddr = mMemory->GetW(ChipRegisters::DLISTL);
+	_lmsAddr = 0;
+	_triggerDLI = false;
+	_listActive = true;
+}
+
+void ANTIC::StepDisplayList()
+{
+	_triggerDLI = false;
+
+	if (!_listActive)
+	{
+		return;
+	}
+	if (!(mMemory->Get(ChipRegisters::DMACTL) & 0b100000))
+	{
+		_listActive = false;
+		return;
+	}
+	if (_renderLine >= VBLANK_SCANLINE)
 	{
 		return;
 	}
 
-	// playfield width (check on each scanline?)
 	switch (mMemory->Get(ChipRegisters::DMACTL) & 0b11)
 	{
 	case 0:
@@ -253,66 +273,55 @@ void ANTIC::RenderDisplayList()
 		break;
 	}
 
-	word_t listStart = mMemory->GetW(ChipRegisters::DLISTL);
-	word_t listAddr = listStart;
-	_lmsAddr = 0;
-	do
+	byte_t ai = mMemory->Get(_listAddr);
+	_mode = ai & 0b1111;
+	bool DLI = ai & 0b10000000;
+	bool LMS = ai & 0b01000000;
+	//bool VS = ai & 0b00100000;
+	//bool HS = ai & 0b00010000;
+	switch (_mode)
 	{
-		byte_t ai = mMemory->Get(listAddr);
-		_mode = ai & 0b1111;
-		bool DLI = ai & 0b10000000;
-		bool LMS = ai & 0b01000000;
-		//bool VS = ai & 0b00100000;
-		//bool HS = ai & 0b00010000;
-		switch (_mode)
+	case 0:
+	{
+		auto numBlanks = ((ai >> 4) & 0b111) + 1;
+		Blank(numBlanks);
+		_listAddr++;
+		break;
+	}
+	case 0x01:
+	{
+		auto jumpAddr = mMemory->GetW(_listAddr + 1);
+		_listAddr = jumpAddr;
+		if (LMS)
 		{
-		case 0:
+			// blanks until the end
+			Blank(VBLANK_SCANLINE - _renderLine);
+		}
+		break;
+	}
+	default:
+	{
+		if (LMS)
 		{
-			auto numBlanks = ((ai >> 4) & 0b111) + 1;
-			Blank(numBlanks);
-			listAddr++;
-			break;
+			_lmsAddr = mMemory->GetW(_listAddr + 1);
+			_listAddr += 2;
 		}
-		case 0x01:
+		if (_mode < 8)
 		{
-			auto jumpAddr = mMemory->GetW(listAddr + 1);
-			listAddr = jumpAddr;
-			if (LMS)
-			{
-				// blanks until the end
-				Blank(VBLANK_SCANLINE - _y);
-			}
-			break;
+			CharacterLine();
 		}
-		default:
+		else
 		{
-			if (LMS)
-			{
-				_lmsAddr = mMemory->GetW(listAddr + 1);
-				listAddr += 2;
-			}
-			if (_mode < 8)
-			{
-				CharacterLine();
-			}
-			else
-			{
-				MapLine();
-			}
-			listAddr++;
+			MapLine();
 		}
-		}
-		if (DLI)
-		{
-			// trigger at the beginning of last scanline
-			_DLIs.insert(_y - 1);
-		}
-	} while (listAddr != listStart && _y < VBLANK_SCANLINE);
-}
-
-void ANTIC::DrawFrame()
-{
-	RenderDisplayList();
+		_listAddr++;
+	}
+	}
+	if (DLI)
+	{
+		// trigger at the beginning of last scanline
+		_triggerDLI = true;
+	}
 }
 
 void ANTIC::Tick()
@@ -320,19 +329,17 @@ void ANTIC::Tick()
 	_lineCycle++;
 	if (_lineCycle == CYCLES_PER_SCANLINE)
 	{
-		if (_DLIs.size())
-		{
-			DrawFrame(); // TO DO: make efficient
-
-			// copy drawn line to screenbuffer
-			memcpy(_screenBuffer + _lineNum, _frameBuffer + _lineNum,
-				   SCREEN_WIDTH * 4);
-		}
-
 		_lineCycle = 0;
 		_lineNum++;
-		// _lineNum is starting drawing
-		if (_DLIs.find(_lineNum) != _DLIs.end())
+
+		// _lineNum is starting tracing, _renderLine is the first line we haven't actually drawn yet
+		if (_lineNum >= _renderLine)
+		{
+			// catch up drawing with tracing
+			StepDisplayList();
+		}
+		// if we've started tracing the last line of the instruction and there was a DLI request, trigger
+		if (_renderLine > 0 && _lineNum == _renderLine - 1 && _triggerDLI)
 		{
 			if (mMemory->DirectGet(ChipRegisters::NMIEN) & 128)
 			{
@@ -341,19 +348,29 @@ void ANTIC::Tick()
 				mCPU->NMI();
 			}
 		}
+
 		if (_lineNum == VBLANK_SCANLINE)
 		{
-			_lineNum = 0;
-			DrawFrame();
-			memcpy(_screenBuffer, _frameBuffer,
-				   FRAME_SIZE);
-
 			if (mMemory->DirectGet(ChipRegisters::NMIEN) & 64)
 			{
 				// VBlank interrupt
 				mMemory->DirectSet(ChipRegisters::NMIST, 64);
 				mCPU->NMI();
 			}
+		}
+		else if (_lineNum == TOTAL_SCANLINES)
+		{
+			_lineNum = 0;
+			StartDisplayList();
+
+			chrono::time_point<chrono::steady_clock> currentFrameTime = chrono::steady_clock::now();
+			chrono::duration<double> frameTime = currentFrameTime - _lastFrameTime;
+			if (frameTime.count() < FRAME_TIME)
+			{
+				// slow down to real time
+				this_thread::sleep_for(chrono::duration<double>(FRAME_TIME - frameTime.count()));
+			}
+			_lastFrameTime = chrono::steady_clock::now();
 		}
 	}
 }

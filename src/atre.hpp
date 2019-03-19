@@ -36,10 +36,17 @@ constexpr int CYCLES_PER_SCANLINE = CYCLES_PER_FRAME / TOTAL_SCANLINES;
 constexpr int PLAYFIELD_NARROW = 256;
 constexpr int PLAYFIELD_NORMAL = 320;
 constexpr int PLAYFIELD_WIDE = 384;
-constexpr int SCREEN_WIDTH = PLAYFIELD_WIDE;
-constexpr int SCREEN_HEIGHT = TOTAL_SCANLINES;
-constexpr int SCREEN_SCALE = 2;
+constexpr int FRAME_WIDTH = PLAYFIELD_WIDE;
+constexpr int FRAME_HEIGHT = TOTAL_SCANLINES;
 constexpr int VISIBLE_SCANLINES = 240;
 constexpr int TOP_SCANLINES = 8;
 constexpr int VBLANK_SCANLINE = TOP_SCANLINES + VISIBLE_SCANLINES;
-constexpr int FRAME_SIZE = SCREEN_WIDTH * SCREEN_HEIGHT * sizeof(uint32_t);
+constexpr int FRAME_SIZE = FRAME_WIDTH * FRAME_HEIGHT * sizeof(uint32_t);
+
+constexpr int SCREEN_WIDTH = FRAME_WIDTH;
+constexpr int SCREEN_HEIGHT = VISIBLE_SCANLINES;
+constexpr int SCREEN_SIZE = SCREEN_WIDTH * SCREEN_HEIGHT * sizeof(uint32_t);
+constexpr int SCREEN_OFFSET = SCREEN_WIDTH * TOP_SCANLINES;
+constexpr int SCREEN_SCALE = 2;
+
+constexpr double FRAME_TIME = 1.0 / FRAMES_PER_SEC;

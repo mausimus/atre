@@ -9,21 +9,24 @@ class ANTIC : public Chip
 	word_t _lineNum;
 	word_t _lineCycle;
 
-	// rendering state
-	uint32_t _frameBuffer[SCREEN_HEIGHT * SCREEN_WIDTH];
-	uint32_t _screenBuffer[SCREEN_HEIGHT * SCREEN_WIDTH];
-	int _y;
+	uint32_t _frameBuffer[FRAME_HEIGHT * FRAME_WIDTH];
+
+	int _renderLine;
 	byte_t _mode;
 	word_t _width;
 	word_t _lmsAddr;
+	word_t _listAddr;
+	bool _triggerDLI;
+	bool _listActive;
+	std::chrono::time_point<std::chrono::steady_clock> _lastFrameTime;
 
 	static uint32_t _palette[128];
 
 	uint32_t GetRGB(byte_t color) const;
-	std::unordered_set<int> _DLIs;
 
-	void RenderDisplayList();
-	void DrawFrame();
+	void StartDisplayList();
+	void StepDisplayList();
+
 	void Blank(int numBlanks);
 	void CharacterLine();
 	void MapLine();
@@ -33,7 +36,7 @@ class ANTIC : public Chip
 	ANTIC(CPU *cpu, Memory *memory);
 	~ANTIC();
 
-	uint32_t *GetScreenBuffer() { return _screenBuffer; }
+	uint32_t *GetFrameBuffer() { return _frameBuffer; }
 	void Reset() override;
 	void Tick() override;
 	void Write(word_t reg, byte_t val) override;

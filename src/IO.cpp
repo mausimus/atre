@@ -106,7 +106,7 @@ void IO::Refresh(bool cpuRunning)
 	{
 		throw runtime_error("Unable to lock texture");
 	}
-	memcpy(pixelsPtr, _ANTIC.GetScreenBuffer(), FRAME_SIZE);
+	memcpy(pixelsPtr, _ANTIC.GetFrameBuffer() + SCREEN_OFFSET, SCREEN_SIZE);
 	SDL_UnlockTexture(_texture);
 	SDL_RenderCopy(_renderer, _texture, NULL, NULL);
 	SDL_RenderPresent(_renderer);
