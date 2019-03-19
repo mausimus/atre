@@ -141,11 +141,6 @@ void POKEY::ShiftKey(bool shiftStatus)
 	}
 }
 
-void POKEY::KeyboardInput(const std::string &input)
-{
-	_keyBuffer.append(input);
-}
-
 void POKEY::Tick()
 {
 	auto irqen = mMemory->DirectGet(ChipRegisters::IRQEN);

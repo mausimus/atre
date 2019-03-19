@@ -7,12 +7,14 @@ using namespace std;
 
 namespace atre
 {
-IO::IO(CPU *cpu, Memory *memory) : _GTIA(cpu, memory),
+IO::IO(CPU *cpu, Memory *memory) : IOBase(cpu, memory),
+								   _GTIA(cpu, memory),
 								   _ANTIC(cpu, memory),
 								   _POKEY(cpu, memory),
 								   _PIA(cpu, memory),
-								   _CPU(cpu),
-								   _window(), _renderer(), _texture()
+								   _window(),
+								   _renderer(),
+								   _texture()
 {
 }
 
@@ -222,11 +224,6 @@ byte_t IO::Read(word_t addr)
 		return _PIA.Read(0xD300 + (addr & 0x3));
 	}
 	return _ANTIC.Read(0xD400 + (addr & 0xF));
-}
-
-void IO::KeyboardInput(const std::string &input)
-{
-	_POKEY.KeyboardInput(input);
 }
 
 void IO::Tick()

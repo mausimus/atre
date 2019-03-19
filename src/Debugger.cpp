@@ -95,35 +95,6 @@ void Debugger::Stop()
 	mStopping = true;
 }
 
-void Debugger::Input(const string &command)
-{
-	mAtari->mIO->KeyboardInput(command);
-	/*	for (size_t i = 0; i < command.length(); i++)
-	{
-		if (command[i] == '\\' && i < command.length() - 1)
-		{
-			switch (command[i + 1])
-			{
-			case 'r':
-				mKeyboardInput->queue.push_back('\r');
-				i++;
-				break;
-			case 'n':
-				mKeyboardInput->queue.push_back('\n');
-				i++;
-				break;
-			default:
-				mKeyboardInput->queue.push_back(command[i]);
-				break;
-			}
-		}
-		else
-		{
-			mKeyboardInput->queue.push_back(command[i]);
-		}
-	}*/
-}
-
 void Debugger::CPUThread()
 {
 	//cout << "Starting CPU thread" << endl;
@@ -210,24 +181,6 @@ void Debugger::DumpMem(const string &fileName)
 			  0x10000);
 
 	ofs.close();
-}
-
-void Debugger::VBlank()
-{
-	int i = 500;
-	while (i-- > 0)
-	{
-		mAtari->mMemory->Set(0xD40F, 0b01011111);
-		mAtari->mCPU->_nmiPending = true;
-		std::this_thread::sleep_for(std::chrono::milliseconds(10));
-	}
-	cout << "Vblanks sent" << endl;
-}
-
-void Debugger::DList()
-{
-	mAtari->mMemory->Set(0xD40F, 0b10011111);
-	mAtari->mCPU->_nmiPending = true;
 }
 
 void Debugger::DumpDList()
@@ -333,11 +286,6 @@ void Debugger::DumpDList()
 		}
 		}
 	} while (listAddr != listStart);
-}
-
-void Debugger::BASIC()
-{
-	mAtari->mCPU->JumpTo(0xA000);
 }
 
 } // namespace atre

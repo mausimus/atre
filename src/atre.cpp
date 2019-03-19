@@ -50,26 +50,6 @@ int main(int /*argc*/, char * /*argv*/ [])
 		{
 			Tests::TimingTest(atari);
 		}
-		// prepend with > to send text to input buffer
-		else if (command[0] == '>')
-		{
-			// prepend with >> to send newline at the end
-			if (command.length() > 1 && command[1] == '>')
-			{
-				debugger.Input(command.substr(2));
-				debugger.Input("\r");
-				debugger.Input("\n");
-			}
-			else
-			{
-				debugger.Input(command.substr(1));
-			}
-		}
-		else if (command == "program")
-		{
-			const string program{"10 FOR I = 1 TO 10\r\n20 PRINT I\r\n30 NEXT I\r\nRUN\r\n"};
-			debugger.Input(program);
-		}
 		else if (command == "start")
 		{
 			debugger.Start();
@@ -103,14 +83,6 @@ int main(int /*argc*/, char * /*argv*/ [])
 		{
 			debugger.Steps(false);
 		}
-		else if (command == "vblank int")
-		{
-			debugger.VBlank();
-		}
-		else if (command == "dlist int")
-		{
-			debugger.DList();
-		}
 		else if (command == "dumpdlist")
 		{
 			debugger.DumpDList();
@@ -118,10 +90,6 @@ int main(int /*argc*/, char * /*argv*/ [])
 		else if (command == "callstack")
 		{
 			debugger.DumpCallStack();
-		}
-		else if (command == "basic")
-		{
-			debugger.BASIC();
 		}
 		else if (command == "dump")
 		{

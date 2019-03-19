@@ -38,14 +38,8 @@ class Debugger
 	void Start();
 	void Stop();
 	void Steps(bool);
-	void Input(const std::string &command);
 	void DumpReg(const std::string &fileName);
 	void DumpMem(const std::string &fileName);
 	void DumpDList();
-	void BASIC();
-
-	// interrupts
-	void VBlank();
-	void DList();
 };
 } // namespace atre

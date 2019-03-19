@@ -81,9 +81,6 @@ class GTIA : public Chip
 class POKEY : public Chip
 {
 	std::vector<byte_t> _serialOut;
-	std::string _keyBuffer; // TODO
-
-	//	static std::map<char, byte_t> _scanCodes;
 
 	byte_t _irqStatus;
 	byte_t _kbCode;
@@ -94,15 +91,19 @@ class POKEY : public Chip
 	unsigned long _cycles;
 
   public:
-	void KeyboardInput(const std::string &input);
 	void KeyDown(byte_t scanCode, bool shiftStatus, bool ctrlStatus);
 	void KeyUp();
 	void Break();
 	void ShiftKey(bool shiftStatus);
 
-	POKEY(CPU *cpu, Memory *memory) : Chip(cpu, memory), _serialOut(),
-									  _keyBuffer(),
-									  _irqStatus(0), _kbCode(), _sioComplete(false), _cycles(0) {}
+	POKEY(CPU *cpu, Memory *memory) : Chip(cpu, memory),
+									  _serialOut(),
+									  _irqStatus(0),
+									  _kbCode(),
+									  _sioComplete(false),
+									  _cycles(0)
+	{
+	}
 
 	void Write(word_t reg, byte_t val) override;
 	byte_t Read(word_t reg) override;
