@@ -95,44 +95,71 @@ void ANTIC::MapLine()
 	auto bgColor = mMemory->Get(ChipRegisters::COLBK);
 	auto outsideColor = GetRGB(bgColor);
 	auto blankWidth = (FRAME_WIDTH - _width) / 2;
+
+	int pixelWidth = 1;
+	int pixelHeight = 1;
+	int bitsPerPixel = 1;
 	if (_mode == 0xE)
 	{
-		auto linePtr = _frameBuffer + _renderLine * FRAME_WIDTH;
-		Fill(linePtr, outsideColor, blankWidth);
+		pixelWidth = 2;
+		bitsPerPixel = 2;
+	}
+	else if (_mode == 0x8)
+	{
+		pixelWidth = 8;
+		pixelHeight = 8;
+		bitsPerPixel = 2;
+	}
+	else if (_mode == 0xB)
+	{
+		pixelHeight = 2;
+		pixelWidth = 2;
+		bitsPerPixel = 1;
+	}
+	{
+		const int bytesPerLine = (_width / pixelWidth) * bitsPerPixel / 8;
+		const int widthPerByte = _width / bytesPerLine;
+		const int pixelsPerByte = 8 / bitsPerPixel;
 
-		for (int i = 0; i < 40; i++)
+		for (int py = 0; py < pixelHeight; py++)
 		{
-			// each byte is 4 pixels, but each pixel is 2-wide
-			// so each memory byte is 8 screen pixels
-			byte_t pixelData = mMemory->Get(_lmsAddr + i);
-			for (int b = 0; b < 4; b++)
+			auto linePtr = _frameBuffer + _renderLine * FRAME_WIDTH;
+			Fill(linePtr, outsideColor, blankWidth);
+			for (int i = 0; i < bytesPerLine; i++)
 			{
-				byte_t colNo = pixelData & 0b11;
-				uint32_t color;
-				switch (colNo)
+				byte_t pixelData = mMemory->Get(_lmsAddr + i);
+				for (int b = 0; b < pixelsPerByte; b++)
 				{
-				case 0:
-					color = bgColor;
-					break;
-				case 1:
-					color = GetRGB(mMemory->Get(ChipRegisters::COLPF0));
-					break;
-				case 2:
-					color = GetRGB(mMemory->Get(ChipRegisters::COLPF1));
-					break;
-				case 3:
-					color = GetRGB(mMemory->Get(ChipRegisters::COLPF2));
-					break;
+					byte_t colNo = bitsPerPixel == 2 ? (pixelData & 0b11) : (pixelData & 1);
+					uint32_t color;
+					switch (colNo)
+					{
+					case 0:
+						color = GetRGB(bgColor);
+						break;
+					case 1:
+						color = GetRGB(mMemory->Get(ChipRegisters::COLPF0));
+						break;
+					case 2:
+						color = GetRGB(mMemory->Get(ChipRegisters::COLPF1));
+						break;
+					case 3:
+						color = GetRGB(mMemory->Get(ChipRegisters::COLPF2));
+						break;
+					}
+					for (int px = 0; px < pixelWidth; px++)
+					{
+						linePtr[blankWidth + i * widthPerByte + (pixelsPerByte - 1 - b) * pixelWidth + px] = color;
+					}
+
+					pixelData >>= bitsPerPixel;
 				}
-				linePtr[blankWidth + i * 8 + (3 - b) * 2] = color;
-				linePtr[blankWidth + i * 8 + (3 - b) * 2 + 1] = color;
-
-				pixelData >>= 2;
 			}
-		}
 
-		Fill(linePtr + FRAME_WIDTH - blankWidth, outsideColor, blankWidth);
-		_renderLine++;
+			Fill(linePtr + FRAME_WIDTH - blankWidth, outsideColor, blankWidth);
+			_renderLine++;
+		}
+		_lmsAddr += bytesPerLine;
 	}
 }
 
@@ -188,6 +215,7 @@ void ANTIC::CharacterLine()
 				}
 				else if (_mode == 6 || _mode == 7)
 				{
+					backColor = outsideColor;
 					switch (_mode >> 6)
 					{
 					case 0:
