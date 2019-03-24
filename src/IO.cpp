@@ -8,8 +8,8 @@ using namespace std;
 namespace atre
 {
 IO::IO(CPU *cpu, Memory *memory) : IOBase(cpu, memory),
-								   _GTIA(cpu, memory),
 								   _ANTIC(cpu, memory),
+								   _GTIA(cpu, memory, &_ANTIC),
 								   _POKEY(cpu, memory),
 								   _PIA(cpu, memory),
 								   _window(),
@@ -108,7 +108,7 @@ void IO::Refresh(bool cpuRunning)
 	{
 		throw runtime_error("Unable to lock texture");
 	}
-	memcpy(pixelsPtr, _ANTIC.GetFrameBuffer() + SCREEN_OFFSET, SCREEN_SIZE);
+	memcpy(pixelsPtr, _ANTIC.GetScreenBuffer() + SCREEN_OFFSET, SCREEN_SIZE);
 	SDL_UnlockTexture(_texture);
 	SDL_RenderCopy(_renderer, _texture, NULL, NULL);
 	SDL_RenderPresent(_renderer);

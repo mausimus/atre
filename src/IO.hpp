@@ -26,8 +26,8 @@ class IOBase
 
 class IO : public IOBase
 {
-	GTIA _GTIA;
 	ANTIC _ANTIC;
+	GTIA _GTIA;
 	POKEY _POKEY;
 	PIA _PIA;
 

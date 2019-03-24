@@ -45,6 +45,23 @@ enum ChipRegisters
 	COLPM3 = 0xD015,
 	TRIG0 = 0xD010,
 	TRIG1 = 0xD011,
+	M0PF = 0xD000,
+	M1PF = 0xD001,
+	M2PF = 0xD002,
+	M3PF = 0xD003,
+	P0PF = 0xD004,
+	P1PF = 0xD005,
+	P2PF = 0xD006,
+	P3PF = 0xD007,
+	M0PL = 0xD008,
+	M1PL = 0xD009,
+	M2PL = 0xD00A,
+	M3PL = 0xD00B,
+	P0PL = 0xD00C,
+	P1PL = 0xD00D,
+	P2PL = 0xD00E,
+	P3PL = 0xD00F,
+	HITCLR = 0xD01E,
 
 	// POKEY
 	STIMER = 0xD209,
@@ -96,16 +113,29 @@ class Chip
 
 class GTIA : public Chip
 {
+	ANTIC *_ANTIC;
+
 	bool _optionKey;
 	bool _selectKey;
 	bool _startKey;
 	bool _joyFire;
 
+	word_t _lineNum;
+	word_t _lineCycle;
+	uint32_t *_frameBuffer;
+
+	byte_t _collisions[16];
+	byte_t _playerPos[FRAME_WIDTH];
+
+	bool DrawMissile(word_t posRegister, word_t colorRegister, int shift, word_t collisionRegister);
+	bool DrawPlayer(word_t posRegister, word_t colorRegister, word_t maskRegister, word_t sizeRegister, word_t collisionRegister, int num);
+
   public:
-	GTIA(CPU *cpu, Memory *memory) : Chip(cpu, memory), _optionKey(), _selectKey(), _startKey(), _joyFire()
+	GTIA(CPU *cpu, Memory *memory, ANTIC *antic) : Chip(cpu, memory), _ANTIC(antic), _optionKey(), _selectKey(), _startKey(), _joyFire()
 	{
 	}
 
+	void Tick() override;
 	void Write(word_t reg, byte_t val) override;
 	byte_t Read(word_t reg) override;
 

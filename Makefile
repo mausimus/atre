@@ -1,5 +1,5 @@
 CC		:= g++
-C_FLAGS := -std=c++17 -Wall -Wextra -g
+C_FLAGS := -std=c++17 -Wall -Wextra -O3 -g
 
 BIN		:= bin
 OBJ		:= obj

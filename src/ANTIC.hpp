@@ -6,10 +6,8 @@ namespace atre
 {
 class ANTIC : public Chip
 {
-	word_t _lineNum;
-	word_t _lineCycle;
-
 	uint32_t _frameBuffer[FRAME_HEIGHT * FRAME_WIDTH];
+	uint32_t _screenBuffer[FRAME_HEIGHT * FRAME_WIDTH];
 
 	int _renderLine;
 	byte_t _mode;
@@ -23,8 +21,6 @@ class ANTIC : public Chip
 
 	static uint32_t _palette[128];
 
-	uint32_t GetRGB(byte_t color) const;
-
 	void StartDisplayList();
 	void StepDisplayList();
 
@@ -33,14 +29,17 @@ class ANTIC : public Chip
 	void MapLine();
 	void Fill(uint32_t *lineStart, uint32_t color, int width);
 
-	void DrawMissile(word_t posRegister, word_t colorRegister, int shift);
-	void DrawPlayer(word_t posRegister, word_t colorRegister, word_t maskRegister, word_t sizeRegister);
-
   public:
 	ANTIC(CPU *cpu, Memory *memory);
 	~ANTIC();
 
+	word_t _lineNum;
+	word_t _lineCycle;
+	byte_t _linePlayfield[FRAME_WIDTH];
+
+	uint32_t GetRGB(byte_t color) const;
 	uint32_t *GetFrameBuffer() { return _frameBuffer; }
+	uint32_t *GetScreenBuffer() { return _screenBuffer; }
 	void Reset() override;
 	void Tick() override;
 	void Write(word_t reg, byte_t val) override;

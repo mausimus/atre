@@ -99,6 +99,7 @@ void ANTIC::MapLine()
 	auto bgColor = mMemory->Get(ChipRegisters::COLBK);
 	auto outsideColor = GetRGB(bgColor);
 	auto blankWidth = (FRAME_WIDTH - _width) / 2;
+	memset(_linePlayfield, 0, FRAME_WIDTH);
 
 	int pixelWidth = 1;
 	int pixelHeight = 1;
@@ -153,7 +154,9 @@ void ANTIC::MapLine()
 					}
 					for (int px = 0; px < pixelWidth; px++)
 					{
-						linePtr[blankWidth + i * widthPerByte + (pixelsPerByte - 1 - b) * pixelWidth + px] = color;
+						auto offset = blankWidth + i * widthPerByte + (pixelsPerByte - 1 - b) * pixelWidth + px;
+						linePtr[offset] = color;
+						_linePlayfield[offset] = colNo;
 					}
 
 					pixelData >>= bitsPerPixel;
@@ -389,6 +392,7 @@ void ANTIC::Tick()
 
 		if (_lineNum == VBLANK_SCANLINE)
 		{
+			memcpy(_screenBuffer, _frameBuffer, FRAME_SIZE);
 			if (mMemory->DirectGet(ChipRegisters::NMIEN) & 64)
 			{
 				// VBlank interrupt
@@ -428,86 +432,6 @@ void ANTIC::Tick()
 							   mMemory->DirectGet(pmBase + sectionLength * 6 + sectionOffset));
 			mMemory->DirectSet(ChipRegisters::GRAFP3,
 							   mMemory->DirectGet(pmBase + sectionLength * 7 + sectionOffset));
-		}
-	}
-	else
-	{
-		if (mMemory->DirectGet(ChipRegisters::GRACTL) & 0b1)
-		{
-			// missile DMA
-			DrawMissile(ChipRegisters::HPOSM0, ChipRegisters::COLPM0, 0);
-			DrawMissile(ChipRegisters::HPOSM1, ChipRegisters::COLPM1, 2);
-			DrawMissile(ChipRegisters::HPOSM2, ChipRegisters::COLPM2, 4);
-			DrawMissile(ChipRegisters::HPOSM3, ChipRegisters::COLPM3, 6);
-		}
-		if (mMemory->DirectGet(ChipRegisters::GRACTL) & 0b10)
-		{
-			// player DMA
-			DrawPlayer(ChipRegisters::HPOSP0, ChipRegisters::COLPM0, ChipRegisters::GRAFP0, ChipRegisters::SIZEP0);
-			DrawPlayer(ChipRegisters::HPOSP1, ChipRegisters::COLPM1, ChipRegisters::GRAFP1, ChipRegisters::SIZEP1);
-			DrawPlayer(ChipRegisters::HPOSP2, ChipRegisters::COLPM2, ChipRegisters::GRAFP2, ChipRegisters::SIZEP2);
-			DrawPlayer(ChipRegisters::HPOSP3, ChipRegisters::COLPM3, ChipRegisters::GRAFP3, ChipRegisters::SIZEP3);
-		}
-	}
-}
-
-void ANTIC::DrawMissile(word_t posRegister, word_t colorRegister, int shift)
-{
-	auto hPos = mMemory->DirectGet(posRegister);
-	if (_lineCycle == hPos / 2)
-	{
-		// output missile 0 at horizonal position HPOSM0
-		auto distFromCenter = hPos - 0x80;
-		auto framePos = (FRAME_WIDTH / 2) + distFromCenter * 2;
-		auto color = GetRGB(mMemory->DirectGet(colorRegister));
-		auto bitMask = (mMemory->DirectGet(ChipRegisters::GRAFM) >> shift) & 0b11;
-		if (bitMask & 0b10)
-		{
-			_frameBuffer[_lineNum * FRAME_WIDTH + framePos] = color;
-			_frameBuffer[_lineNum * FRAME_WIDTH + framePos + 1] = color;
-		}
-		if (bitMask & 0b1)
-		{
-			_frameBuffer[_lineNum * FRAME_WIDTH + framePos + 2] = color;
-			_frameBuffer[_lineNum * FRAME_WIDTH + framePos + 3] = color;
-		}
-	}
-}
-
-void ANTIC::DrawPlayer(word_t posRegister, word_t colorRegister, word_t maskRegister, word_t sizeRegister)
-{
-	auto hPos = mMemory->DirectGet(posRegister);
-	if (_lineCycle == hPos / 2)
-	{
-		// output missile 0 at horizonal position HPOSM0
-		auto distFromCenter = hPos - 0x80;
-		auto framePos = (FRAME_WIDTH / 2) + distFromCenter * 2;
-		auto color = GetRGB(mMemory->DirectGet(colorRegister));
-		auto bitMask = mMemory->DirectGet(maskRegister);
-		int size = 2;
-		switch (mMemory->DirectGet(sizeRegister))
-		{
-		case 1:
-			size *= 2;
-			break;
-		case 3:
-			size *= 4;
-			break;
-		}
-		for (int i = 0; i < 8; i++)
-		{
-			for (int j = 0; j < size; j++)
-			{
-				if (bitMask & 1)
-				{
-					auto offset = framePos + (7 - i) * size + j;
-					if (offset >= 0 && offset < FRAME_WIDTH)
-					{
-						_frameBuffer[_lineNum * FRAME_WIDTH + offset] = color;
-					}
-				}
-			}
-			bitMask >>= 1;
 		}
 	}
 }
