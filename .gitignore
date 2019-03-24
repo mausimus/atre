@@ -5,3 +5,8 @@ bin/atre
 *.rom
 *.ROM
 .vscode/ipch
+packages/
+.vs/
+Debug/
+Release/
+*.user

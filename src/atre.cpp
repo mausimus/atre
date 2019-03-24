@@ -5,12 +5,10 @@
 #include "Chips.hpp"
 #include "ANTIC.hpp"
 
-//#include <SDL.h>
-
 using namespace atre;
 using namespace std;
 
-int main(int /*argc*/, char * /*argv*/ [])
+int main(int /*argc*/, char * /*argv*/[])
 {
 	cout << "atre Atari emulator" << endl;
 
@@ -21,18 +19,35 @@ int main(int /*argc*/, char * /*argv*/ [])
 	bool isExiting = false;
 	do
 	{
-		string command;
+		string line;
 		cout << ">" << flush;
-		getline(cin, command);
+		getline(cin, line);
+		if (!line.length())
+		{
+			continue;
+		}
+		istringstream commands(line);
+		string command;
+		commands >> command;
 
-		if (command == "exit")
+		if (command.empty())
+		{
+			continue;
+		}
+		else if (command == "exit")
 		{
 			debugger.Exit();
 			isExiting = true;
 		}
-		else if (command.empty())
+		else if (command == "help")
 		{
-			continue;
+			cout << "Type `boot <os_rom_file> [cartridge_rom_file]` to start the emulator" << endl;
+			cout << "<os_rom_file> should be the Atari XL OS ROM image (16 kB, Rev B)" << endl;
+			cout << "[cartridge_rom_file] is an optional additional 8kB ROM, either BASIC or cartridge" << endl;
+			cout << "If no cartridge ROM is loaded the system will start Self Test" << endl;
+			cout << "Use `stop` and `start` to pause the CPU and `exit` to quit" << endl;
+			cout << "[F1] = Help, [F2] = Start, [F3] = Select, [F4] = Option, [F5] = Reset, [F6] = Break" << endl;
+			cout << "[Arrow Keys] = Joystick, [Left Ctrl] = Fire" << endl;
 		}
 		else if (command == "test1")
 		{
@@ -60,12 +75,20 @@ int main(int /*argc*/, char * /*argv*/ [])
 		}
 		else if (command == "boot")
 		{
-			Tests::Boot(atari);
+			if (commands.eof())
+			{
+				cout << "Please specify OS ROM and optionally cartridge ROM file names." << endl;
+				continue;
+			}
+			string osROM;
+			string cartridgeROM;
+			commands >> osROM;
+			if (!commands.eof())
+			{
+				commands >> cartridgeROM;
+			}
+			Tests::Boot(atari, osROM, cartridgeROM);
 			debugger.Start();
-		}
-		else if (command == "dumpreg")
-		{
-			debugger.DumpReg("d000-d800.bin");
 		}
 		else if (command == "dumpmem")
 		{
@@ -74,10 +97,6 @@ int main(int /*argc*/, char * /*argv*/ [])
 		else if (command == "steps on")
 		{
 			debugger.Steps(true);
-		}
-		else if (command == "selftest")
-		{
-			Tests::SelfTest(atari);
 		}
 		else if (command == "steps off")
 		{
@@ -91,9 +110,11 @@ int main(int /*argc*/, char * /*argv*/ [])
 		{
 			debugger.DumpCallStack();
 		}
-		else if (command == "dump")
+		else if (command == "dumpcpu")
 		{
 			debugger.Dump();
 		}
 	} while (!isExiting);
+
+	return 0;
 }

@@ -6,17 +6,15 @@
 
 namespace atre
 {
+	class Atari
+	{
+	public:
+		Atari();
 
-class Atari
-{
-  public:
-	Atari();
+		void Reset();
 
-	void Reset();
-
-	std::unique_ptr<IO> mIO;
-	std::unique_ptr<CPU> mCPU;
-	std::unique_ptr<Memory> mMemory;
-};
-
+		std::unique_ptr<IO> mIO;
+		std::unique_ptr<CPU> mCPU;
+		std::unique_ptr<Memory> mMemory;
+	};
 } // namespace atre

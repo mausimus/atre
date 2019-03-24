@@ -4,20 +4,18 @@
 
 namespace atre
 {
+	Atari::Atari()
+	{
+		mMemory = std::make_unique<Memory>();
+		mCPU = std::make_unique<CPU>(mMemory.get());
+		mIO = std::make_unique<IO>(mCPU.get(), mMemory.get());
+		mMemory->Connect(mIO.get());
+		mCPU->Connect(mIO.get());
+	}
 
-Atari::Atari()
-{
-	mMemory = std::make_unique<Memory>();
-	mCPU = std::make_unique<CPU>(mMemory.get());
-	mIO = std::make_unique<IO>(mCPU.get(), mMemory.get());
-	mMemory->Connect(mIO.get());
-	mCPU->Connect(mIO.get());
-}
-
-void Atari::Reset()
-{
-	mMemory->Clear();
-	mIO->Reset();
-}
-
+	void Atari::Reset()
+	{
+		mMemory->Clear();
+		mIO->Reset();
+	}
 } // namespace atre
