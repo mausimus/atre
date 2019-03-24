@@ -17,6 +17,7 @@ class ANTIC : public Chip
 	word_t _lmsAddr;
 	word_t _listAddr;
 	bool _triggerDLI;
+	bool _hs;
 	bool _listActive;
 	std::chrono::time_point<std::chrono::steady_clock> _lastFrameTime;
 
@@ -31,6 +32,9 @@ class ANTIC : public Chip
 	void CharacterLine();
 	void MapLine();
 	void Fill(uint32_t *lineStart, uint32_t color, int width);
+
+	void DrawMissile(word_t posRegister, word_t colorRegister, int shift);
+	void DrawPlayer(word_t posRegister, word_t colorRegister, word_t maskRegister, word_t sizeRegister);
 
   public:
 	ANTIC(CPU *cpu, Memory *memory);

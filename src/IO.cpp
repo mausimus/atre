@@ -125,6 +125,7 @@ void IO::Refresh(bool cpuRunning)
 			case SDL_KEYUP:
 			{
 				auto shiftStatus = e.key.keysym.mod & KMOD_SHIFT;
+				auto isUp = e.type == SDL_KEYUP;
 				_POKEY.ShiftKey(shiftStatus);
 				if (e.key.keysym.scancode == SDL_SCANCODE_F2)
 				{
@@ -142,7 +143,27 @@ void IO::Refresh(bool cpuRunning)
 				{
 					_CPU->Reset();
 				}
-				else if (e.type == SDL_KEYUP)
+				else if (e.key.keysym.scancode == SDL_SCANCODE_UP)
+				{
+					_PIA.JoyUp(!isUp);
+				}
+				else if (e.key.keysym.scancode == SDL_SCANCODE_DOWN)
+				{
+					_PIA.JoyDown(!isUp);
+				}
+				else if (e.key.keysym.scancode == SDL_SCANCODE_LEFT)
+				{
+					_PIA.JoyLeft(!isUp);
+				}
+				else if (e.key.keysym.scancode == SDL_SCANCODE_RIGHT)
+				{
+					_PIA.JoyRight(!isUp);
+				}
+				else if (e.key.keysym.scancode == SDL_SCANCODE_LCTRL)
+				{
+					_GTIA.JoyFire(!isUp);
+				}
+				else if (isUp)
 				{
 					_POKEY.KeyUp();
 				}
@@ -228,10 +249,10 @@ byte_t IO::Read(word_t addr)
 
 void IO::Tick()
 {
+	_ANTIC.Tick();
 	_GTIA.Tick();
 	_POKEY.Tick();
 	_PIA.Tick();
-	_ANTIC.Tick();
 }
 
 void IO::Reset()

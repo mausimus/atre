@@ -4,3 +4,4 @@ bin/atre
 *.gch
 *.rom
 *.ROM
+.vscode/ipch

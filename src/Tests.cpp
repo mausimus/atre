@@ -90,7 +90,8 @@ void Tests::TimingTest(Atari &atari)
 void Tests::Boot(Atari &atari)
 {
 	atari.Reset();
-	atari.mCPU->mMemory->LoadROM("REV02.ROM", "REVC.ROM");
+	//	atari.mCPU->mMemory->LoadROM("REV02.ROM", "REVC.ROM");
+	atari.mCPU->mMemory->LoadROM("REV02.ROM", "River Raid.rom");
 	atari.mCPU->mEnableTraps = true;
 	atari.mCPU->mShowCycles = true;
 	atari.mCPU->Reset();

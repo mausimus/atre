@@ -12,6 +12,10 @@ byte_t GTIA::Read(word_t addr)
 	{
 	case ChipRegisters::PAL:
 		return 0xF;
+	case ChipRegisters::TRIG0:
+		return !_joyFire;
+	case ChipRegisters::TRIG1:
+		return 0x1;
 	case ChipRegisters::CONSOL:
 	{
 		byte_t consol = 0;
@@ -223,59 +227,33 @@ void POKEY::Tick()
 			mCPU->IRQ();
 		}
 	}
-
-	/*
-	if (_cycles == 1000000)
-	{
-		_cycles = 0;
-		if (_keyBuffer.length())
-		{
-			auto c = _keyBuffer[0];
-			_keyBuffer = _keyBuffer.substr(1);
-			auto scanCode = _scanCodes.find(c);
-			if (scanCode != _scanCodes.end())
-			{
-				_kbCode = scanCode->second;
-				if (irqen & 0b1000000)
-				{
-					_irqStatus |= 0b1000000;
-					mCPU->IRQ(); // keypress
-				}
-			}
-		}
-	}*/
-	/* TODO: timers
-	_cycles++;
-	if (_cycles == 10000)
-	{
-		_cycles = 0;
-		bool trigger = false;
-		if (irqen & 1)
-		{
-			trigger = true;
-			_irqStatus |= 1;
-		}
-		if (irqen & 2)
-		{
-			trigger = true;
-			_irqStatus |= 2;
-		}
-		if (irqen & 4)
-		{
-			trigger = true;
-			_irqStatus |= 4;
-		}
-		if (trigger)
-		{
-			mCPU->IRQ();
-		}
-	}*/
 }
 
 byte_t PIA::Read(word_t addr)
 {
 	switch (addr)
 	{
+	case ChipRegisters::PORTA:
+	{
+		byte_t portA = 0xFF;
+		if (_joyUp)
+		{
+			portA &= ~0b1;
+		}
+		if (_joyDown)
+		{
+			portA &= ~0b10;
+		}
+		if (_joyLeft)
+		{
+			portA &= ~0b100;
+		}
+		if (_joyRight)
+		{
+			portA &= ~0b1000;
+		}
+		return portA;
+	}
 	case ChipRegisters::PORTB:
 	default:
 		break;
@@ -289,6 +267,7 @@ void PIA::Write(word_t addr, byte_t val)
 	switch (addr)
 	{
 	case ChipRegisters::PORTB:
+		val |= 1;
 	default:
 		mMemory->DirectSet(addr, val);
 		break;

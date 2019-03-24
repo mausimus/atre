@@ -194,6 +194,7 @@ void ANTIC::CharacterLine()
 	auto blankWidth = (FRAME_WIDTH - _width) / 2;
 	auto charWidth = 8 * bitWidth;
 	auto numChars = _width / charWidth;
+	auto hs = _hs ? mMemory->DirectGet(ChipRegisters::HSCROL) * 2 : 0;
 	for (int l = 0; l < 8; l++)
 	{
 		for (int bh = 0; bh < bitHeight; bh++)
@@ -220,7 +221,7 @@ void ANTIC::CharacterLine()
 				else if (_mode == 6 || _mode == 7)
 				{
 					backColor = outsideColor;
-					switch (_mode >> 6)
+					switch (charNo >> 6)
 					{
 					case 0:
 						foreColor = GetRGB(mMemory->Get(ChipRegisters::COLPF0));
@@ -235,6 +236,7 @@ void ANTIC::CharacterLine()
 						foreColor = GetRGB(mMemory->Get(ChipRegisters::COLPF3));
 						break;
 					}
+					charNo &= 0b111111;
 				}
 				byte_t charLine = mMemory->Get(chBase + (charNo * 8) + l);
 				// output bits as pixels
@@ -244,7 +246,11 @@ void ANTIC::CharacterLine()
 					auto color = bit ? foreColor : backColor;
 					for (int bw = 0; bw < bitWidth; bw++)
 					{
-						linePtr[blankWidth + n * charWidth + (7 - b) * bitWidth + bw] = color;
+						auto lineOffset = hs + n * charWidth + (7 - b) * bitWidth + bw;
+						if (lineOffset < _width)
+						{
+							linePtr[blankWidth + lineOffset] = color;
+						}
 					}
 					charLine >>= 1;
 				}
@@ -310,7 +316,7 @@ void ANTIC::StepDisplayList()
 	bool DLI = ai & 0b10000000;
 	bool LMS = ai & 0b01000000;
 	//bool VS = ai & 0b00100000;
-	//bool HS = ai & 0b00010000;
+	_hs = ai & 0b00010000;
 	switch (_mode)
 	{
 	case 0:
@@ -403,6 +409,105 @@ void ANTIC::Tick()
 				this_thread::sleep_for(chrono::duration<double>(FRAME_TIME - frameTime.count()));
 			}
 			_lastFrameTime = chrono::steady_clock::now();
+		}
+
+		// P/M if DMA enabled
+		if (_lineNum < VBLANK_SCANLINE && mMemory->DirectGet(ChipRegisters::DMACTL) & 0b1000)
+		{
+			word_t pmBase = mMemory->DirectGet(ChipRegisters::PMBASE) << 8;
+			bool lowRes = !(mMemory->DirectGet(ChipRegisters::DMACTL) & 0b10000);
+			auto sectionLength = lowRes ? 128 : 256;
+			auto sectionOffset = lowRes ? _lineNum / 2 : _lineNum;
+			mMemory->DirectSet(ChipRegisters::GRAFM,
+							   mMemory->DirectGet(pmBase + sectionLength * 3 + sectionOffset));
+			mMemory->DirectSet(ChipRegisters::GRAFP0,
+							   mMemory->DirectGet(pmBase + sectionLength * 4 + sectionOffset));
+			mMemory->DirectSet(ChipRegisters::GRAFP1,
+							   mMemory->DirectGet(pmBase + sectionLength * 5 + sectionOffset));
+			mMemory->DirectSet(ChipRegisters::GRAFP2,
+							   mMemory->DirectGet(pmBase + sectionLength * 6 + sectionOffset));
+			mMemory->DirectSet(ChipRegisters::GRAFP3,
+							   mMemory->DirectGet(pmBase + sectionLength * 7 + sectionOffset));
+		}
+	}
+	else
+	{
+		if (mMemory->DirectGet(ChipRegisters::GRACTL) & 0b1)
+		{
+			// missile DMA
+			DrawMissile(ChipRegisters::HPOSM0, ChipRegisters::COLPM0, 0);
+			DrawMissile(ChipRegisters::HPOSM1, ChipRegisters::COLPM1, 2);
+			DrawMissile(ChipRegisters::HPOSM2, ChipRegisters::COLPM2, 4);
+			DrawMissile(ChipRegisters::HPOSM3, ChipRegisters::COLPM3, 6);
+		}
+		if (mMemory->DirectGet(ChipRegisters::GRACTL) & 0b10)
+		{
+			// player DMA
+			DrawPlayer(ChipRegisters::HPOSP0, ChipRegisters::COLPM0, ChipRegisters::GRAFP0, ChipRegisters::SIZEP0);
+			DrawPlayer(ChipRegisters::HPOSP1, ChipRegisters::COLPM1, ChipRegisters::GRAFP1, ChipRegisters::SIZEP1);
+			DrawPlayer(ChipRegisters::HPOSP2, ChipRegisters::COLPM2, ChipRegisters::GRAFP2, ChipRegisters::SIZEP2);
+			DrawPlayer(ChipRegisters::HPOSP3, ChipRegisters::COLPM3, ChipRegisters::GRAFP3, ChipRegisters::SIZEP3);
+		}
+	}
+}
+
+void ANTIC::DrawMissile(word_t posRegister, word_t colorRegister, int shift)
+{
+	auto hPos = mMemory->DirectGet(posRegister);
+	if (_lineCycle == hPos / 2)
+	{
+		// output missile 0 at horizonal position HPOSM0
+		auto distFromCenter = hPos - 0x80;
+		auto framePos = (FRAME_WIDTH / 2) + distFromCenter * 2;
+		auto color = GetRGB(mMemory->DirectGet(colorRegister));
+		auto bitMask = (mMemory->DirectGet(ChipRegisters::GRAFM) >> shift) & 0b11;
+		if (bitMask & 0b10)
+		{
+			_frameBuffer[_lineNum * FRAME_WIDTH + framePos] = color;
+			_frameBuffer[_lineNum * FRAME_WIDTH + framePos + 1] = color;
+		}
+		if (bitMask & 0b1)
+		{
+			_frameBuffer[_lineNum * FRAME_WIDTH + framePos + 2] = color;
+			_frameBuffer[_lineNum * FRAME_WIDTH + framePos + 3] = color;
+		}
+	}
+}
+
+void ANTIC::DrawPlayer(word_t posRegister, word_t colorRegister, word_t maskRegister, word_t sizeRegister)
+{
+	auto hPos = mMemory->DirectGet(posRegister);
+	if (_lineCycle == hPos / 2)
+	{
+		// output missile 0 at horizonal position HPOSM0
+		auto distFromCenter = hPos - 0x80;
+		auto framePos = (FRAME_WIDTH / 2) + distFromCenter * 2;
+		auto color = GetRGB(mMemory->DirectGet(colorRegister));
+		auto bitMask = mMemory->DirectGet(maskRegister);
+		int size = 2;
+		switch (mMemory->DirectGet(sizeRegister))
+		{
+		case 1:
+			size *= 2;
+			break;
+		case 3:
+			size *= 4;
+			break;
+		}
+		for (int i = 0; i < 8; i++)
+		{
+			for (int j = 0; j < size; j++)
+			{
+				if (bitMask & 1)
+				{
+					auto offset = framePos + (7 - i) * size + j;
+					if (offset >= 0 && offset < FRAME_WIDTH)
+					{
+						_frameBuffer[_lineNum * FRAME_WIDTH + offset] = color;
+					}
+				}
+			}
+			bitMask >>= 1;
 		}
 	}
 }
