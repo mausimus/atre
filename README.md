@@ -1,25 +1,35 @@
 ## atre
 
-Simple 8-bit Atari platform (800XL/65XE) emulator in C++ (_work in progress!_)
+Simple 8-bit Atari platform (XL/XE) emulator in C++
 
-### Project goals
+### Features
 
-* MOS 6502 CPU emulation - done!
-* Graphics and IO chipsets emulation - partial
-* boot original Atari OS - done!
-* run Atari BASIC - done!
-* pass Self Test - partial
-* run a simple game - pending
+* Full MOS 6502 CPU emulation
+* Graphics/IO hardware registers emulation
+* boots original Atari XL OS
+* runs Atari BASIC
+* passes Self Test
+* runs a classic game
+
+Only the necessary features to run the above have been implemented,
+the project doesn't aspire to compete with any well-established emulators!
+
+Feel free to try running your favourite game and enhancing the emulator to
+do so correctly.
 
 ### Screenshots
 
-###### Original Atari BASIC
+###### Original BASIC
 
 ![screenshot](images/screen1.png)
 
-###### XL/XE Self-Test
+###### Self-Test
 
 ![screenshot](images/screen2.png)
+
+###### Classic Game
+
+![screenshot](images/screen4.png)
 
 ###### Debugger
 
@@ -27,12 +37,12 @@ Simple 8-bit Atari platform (800XL/65XE) emulator in C++ (_work in progress!_)
 
 ### Code
 
-Reference build using GCC in C++ 17 mode on Ubuntu and SDL library for graphics.
+Cross-platform C++ 17, reference build using gcc 7.3 and make 4.1 on Ubuntu 18.04
+and SDL 2.0.8 for graphics and IO.
 
-In order to boot you will need original Atari OS ROM (_REV02.ROM_) and BASIC ROM (_REVC.ROM_).
-
-The focus of the project is on producing a working version first with optimisations
-and design rationalisation coming later (time-permitting).
+In order to start the emulator you will need an original Atari OS ROM and
+either the BASIC ROM or a custom game ROM (cartridge). Type _help_ in
+the debugger window for more info. No ROMs are included in this repository!
 
 ### Thanks
 
