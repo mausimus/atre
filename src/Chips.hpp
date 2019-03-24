@@ -29,6 +29,11 @@ enum ChipRegisters
 	SEROUT = 0xD20D,
 	SERIN = 0xD20D,
 	SKSTAT = 0xD20F,
+	AUDF1 = 0xD200,
+	AUDF2 = 0xD202,
+	AUDF3 = 0xD204,
+	AUDF4 = 0xD206,
+	AUDCTL = 0xD208,
 
 	// PIA
 	PORTB = 0xD301,

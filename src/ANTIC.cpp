@@ -43,6 +43,10 @@ void ANTIC::Write(word_t addr, byte_t val)
 		{
 			mCPU->Wait(104 - _lineCycle);
 		}
+		else
+		{
+			mCPU->Wait(CYCLES_PER_SCANLINE + 104 - _lineCycle);
+		}
 		break;
 	case ChipRegisters::NMIRES:
 		mMemory->DirectSet(ChipRegisters::NMIST, 0);

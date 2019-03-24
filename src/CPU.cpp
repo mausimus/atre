@@ -1024,6 +1024,7 @@ void CPU::Execute()
 {
 	if (_waitCycles)
 	{
+		Cycles(1);
 		_waitCycles--;
 		return;
 	}

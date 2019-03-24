@@ -59,7 +59,7 @@ byte_t POKEY::Read(word_t addr)
 		_irqStatus &= ~(0b01000000); // clear IRQ status once read??
 		return _kbCode;
 	case ChipRegisters::SKSTAT:
-		return _kbStat;
+		return ~_kbStat;
 	case ChipRegisters::IRQST:
 		return ~_irqStatus;
 	default:
@@ -182,6 +182,48 @@ void POKEY::Tick()
 	}
 
 	_cycles++;
+	if (_cycles == CYCLES_PER_SEC)
+	{
+		_cycles = 0;
+	}
+	if (_cycles % 28 == 0)
+	{
+		// 64kHz tick
+		bool trigger = false;
+		auto numTicks = _cycles / 28;
+		auto freq1 = mMemory->DirectGet(ChipRegisters::AUDF1);
+		if (freq1 && (irqen & 1) && numTicks % freq1 == 0)
+		{
+			_irqStatus |= 1;
+		}
+		else
+		{
+			_irqStatus &= ~1;
+		}
+		auto freq2 = mMemory->DirectGet(ChipRegisters::AUDF2);
+		if (freq2 && (irqen & 2) && numTicks % freq2 == 0)
+		{
+			_irqStatus |= 2;
+		}
+		else
+		{
+			_irqStatus &= ~2;
+		}
+		auto freq4 = mMemory->DirectGet(ChipRegisters::AUDF4);
+		if (freq4 && (irqen & 4) && numTicks % freq4 == 0)
+		{
+			_irqStatus |= 4;
+		}
+		else
+		{
+			_irqStatus &= ~4;
+		}
+		if (trigger)
+		{
+			mCPU->IRQ();
+		}
+	}
+
 	/*
 	if (_cycles == 1000000)
 	{
