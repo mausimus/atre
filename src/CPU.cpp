@@ -379,7 +379,7 @@ void CPU::opBVS(word_t opIndex, AddressingMode /*adr*/)
 	Branch(opIndex, IsSetFlag(CPU::OVERFLOW_FLAG));
 }
 
-// Test Bits in RAM with Accumulator
+// Test Bits in getRAM with Accumulator
 void CPU::opBIT(word_t opIndex, AddressingMode adr)
 {
 	byte_t op = GetOP(opIndex, adr);
@@ -709,7 +709,7 @@ void CPU::opRTI(word_t /*opIndex*/, AddressingMode /*adr*/)
 		m_callStack.pop_back();
 	}
 	F = StackPull();
-	// ClearFlag(CPU::INTERRUPT_FLAG);
+	// ClearFlag(getCPU::INTERRUPT_FLAG);
 	word_t retAddress = StackPull();
 	retAddress += (StackPull() << 8);
 	PC = retAddress;

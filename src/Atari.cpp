@@ -7,10 +7,10 @@ namespace atre
 Atari::Atari()
 {
 	m_RAM = make_unique<atre::RAM>();
-	m_CPU = make_unique<atre::CPU>(RAM());
-	m_IO  = make_unique<atre::IO>(CPU(), RAM());
-	m_RAM->Connect(IO());
-	m_CPU->Connect(IO());
+	m_CPU = make_unique<atre::CPU>(getRAM());
+	m_IO  = make_unique<atre::IO>(getCPU(), getRAM());
+	m_RAM->Connect(getIO());
+	m_CPU->Connect(getIO());
 }
 
 void Atari::Reset()

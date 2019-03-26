@@ -15,7 +15,7 @@ Debugger::Debugger(Atari* atari) :
 
 void Debugger::Initialize()
 {
-	m_atari->CPU()->Attach(this);
+	m_atari->getCPU()->Attach(this);
 	m_CPUThread = make_unique<thread>(bind(&atre::Debugger::CPUThread, this));
 	m_IOThread	= make_unique<thread>(bind(&atre::Debugger::IOThread, this));
 }
@@ -31,16 +31,16 @@ void Debugger::Exit()
 
 void Debugger::CallStack()
 {
-	for(auto s : m_atari->CPU()->m_callStack)
+	for(auto s : m_atari->getCPU()->m_callStack)
 	{
 		cout << hex << s.first << " (" << s.second << ")" << endl;
 	}
-	cout << hex << m_atari->CPU()->PC << " (PC)" << endl;
+	cout << hex << m_atari->getCPU()->PC << " (PC)" << endl;
 }
 
 void Debugger::DumpState()
 {
-	const CPU& cpu = *(m_atari->CPU());
+	const CPU& cpu = *(m_atari->getCPU());
 	cout << "A = " << hex << showbase << (int)cpu.A << " (" << dec << (int)cpu.A << "), ";
 	cout << "X = " << hex << showbase << (int)cpu.X << " (" << dec << (int)cpu.X << "), ";
 	cout << "Y = " << hex << showbase << (int)cpu.Y << " (" << dec << (int)cpu.Y << "), ";
@@ -58,7 +58,7 @@ void Debugger::DumpState()
 	cout << " " << bitset<8>(cpu.F) << endl;
 }
 
-// CPU callbacks
+// getCPU callbacks
 void Debugger::OnTrap()
 {
 	cout << "Trap" << endl;
@@ -104,11 +104,11 @@ void Debugger::Stop()
 
 void Debugger::CPUThread()
 {
-	// cout << "Starting CPU thread" << endl;
+	// cout << "Starting getCPU thread" << endl;
 	unique_lock<mutex> runningLock(m_mutex);
 	while(!m_exiting)
 	{
-		// cout << "(CPU Thread Step)" << endl;
+		// cout << "(getCPU Thread Step)" << endl;
 		m_running.wait(runningLock);
 		if(m_exiting)
 		{
@@ -117,23 +117,23 @@ void Debugger::CPUThread()
 		cout << "Starting CPU execution" << endl;
 		while(!m_stopping)
 		{
-			m_atari->CPU()->Execute();
+			m_atari->getCPU()->Execute();
 		}
 		cout << "Stopping CPU execution" << endl;
 	}
-	// cout << "Exiting CPU thread" << endl;
+	// cout << "Exiting getCPU thread" << endl;
 }
 
 void Debugger::IOThread()
 {
-	// cout << "Starting IO thread" << endl;
-	m_atari->IO()->Initialize();
+	// cout << "Starting getIO thread" << endl;
+	m_atari->getIO()->Initialize();
 	auto tickInterval  = chrono::duration<int, milli>(MILLISEC_PER_FRAME);
 	auto pauseInterval = chrono::duration<int, milli>(1000);
 	while(!m_exiting)
 	{
-		// cout << "(IO Thread Step)" << endl;
-		m_atari->IO()->Refresh(!m_stopping);
+		// cout << "(getIO Thread Step)" << endl;
+		m_atari->getIO()->Refresh(!m_stopping);
 		if(m_stopping)
 		{
 			this_thread::sleep_for(pauseInterval);
@@ -143,13 +143,13 @@ void Debugger::IOThread()
 			this_thread::sleep_for(tickInterval);
 		}
 	}
-	m_atari->IO()->Destroy();
-	// cout << "Exiting IO thread" << endl;
+	m_atari->getIO()->Destroy();
+	// cout << "Exiting getIO thread" << endl;
 }
 
 void Debugger::Steps(bool steps)
 {
-	m_atari->CPU()->m_showSteps = steps;
+	m_atari->getCPU()->m_showSteps = steps;
 }
 
 void Debugger::DumpRAM(const string& fileName)
@@ -162,9 +162,9 @@ void Debugger::DumpRAM(const string& fileName)
 	}
 
 	byte_t visibleMem[MEM_SIZE];
-	for(word_t i = 0; i < MEM_SIZE; i++)
+	for(auto i = 0; i < MEM_SIZE; i++)
 	{
-		visibleMem[i] = m_atari->RAM()->Get(i);
+		visibleMem[i] = m_atari->getRAM()->Get(static_cast<word_t>(i));
 	}
 
 	ofs.write(reinterpret_cast<char*>(visibleMem), 0x10000);
@@ -174,12 +174,12 @@ void Debugger::DumpRAM(const string& fileName)
 
 void Debugger::ShowDList()
 {
-	word_t listStart = m_atari->RAM()->GetW(ChipRegisters::DLISTL);
+	word_t listStart = m_atari->getRAM()->GetW(ChipRegisters::DLISTL);
 	word_t listAddr	 = listStart;
 	word_t lmsAddr	 = 0;
 	do
 	{
-		byte_t ai	= m_atari->RAM()->Get(listAddr);
+		byte_t ai	= m_atari->getRAM()->Get(listAddr);
 		byte_t mode = ai & 0b1111;
 		bool   DLI	= ai & 0b10000000;
 		bool   LMS	= ai & 0b01000000;
@@ -202,7 +202,7 @@ void Debugger::ShowDList()
 		case 0x01:
 		case 0x41:
 		{
-			auto jumpAddr = m_atari->RAM()->GetW(listAddr + 1);
+			auto jumpAddr = m_atari->getRAM()->GetW(listAddr + 1);
 			cout << (LMS ? "JVB" : "JMP") << " " << hex << jumpAddr << dec << endl;
 			listAddr = jumpAddr;
 			break;
@@ -211,13 +211,13 @@ void Debugger::ShowDList()
 		{
 			if(LMS)
 			{
-				lmsAddr = m_atari->RAM()->GetW(listAddr + 1);
+				lmsAddr = m_atari->getRAM()->GetW(listAddr + 1);
 			}
 			if(mode < 8)
 			{
 				if(mode == 2)
 				{
-					auto pf		  = m_atari->RAM()->Get(ChipRegisters::DMACTL) & 0b11;
+					auto pf		  = m_atari->getRAM()->Get(ChipRegisters::DMACTL) & 0b11;
 					int	 numChars = 40;
 					if(pf == 1)
 					{
@@ -229,7 +229,7 @@ void Debugger::ShowDList()
 					}
 					for(int cn = 0; cn < numChars; cn++)
 					{
-						byte_t bc = m_atari->RAM()->Get(lmsAddr);
+						byte_t bc = m_atari->getRAM()->Get(lmsAddr);
 						char   c  = static_cast<char>((bc & 0x7F) + 0x20);
 						if(isalnum(c))
 						{

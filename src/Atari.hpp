@@ -15,17 +15,17 @@ class Atari
 public:
 	Atari();
 
-	inline CPU* CPU()
+	inline CPU* getCPU()
 	{
 		return m_CPU.get();
 	}
 
-	inline IO* IO()
+	inline IO* getIO()
 	{
 		return m_IO.get();
 	}
 
-	inline RAM* RAM()
+	inline RAM* getRAM()
 	{
 		return m_RAM.get();
 	}
