@@ -73,7 +73,7 @@
     <ClCompile>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
     </ClCompile>
@@ -106,7 +106,7 @@
     <ClCompile Include="src\CPU.cpp" />
     <ClCompile Include="src\Debugger.cpp" />
     <ClCompile Include="src\IO.cpp" />
-    <ClCompile Include="src\Memory.cpp" />
+    <ClCompile Include="src\RAM.cpp" />
     <ClCompile Include="src\Tests.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -117,10 +117,11 @@
     <ClInclude Include="src\CPU.hpp" />
     <ClInclude Include="src\Debugger.hpp" />
     <ClInclude Include="src\IO.hpp" />
-    <ClInclude Include="src\Memory.hpp" />
+    <ClInclude Include="src\RAM.hpp" />
     <ClInclude Include="src\Tests.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include=".clang-format" />
     <None Include="packages.config" />
     <None Include="README.md" />
   </ItemGroup>

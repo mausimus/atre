@@ -39,10 +39,10 @@
     <ClCompile Include="src\IO.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Memory.cpp">
+    <ClCompile Include="src\Tests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Tests.cpp">
+    <ClCompile Include="src\RAM.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -68,16 +68,17 @@
     <ClInclude Include="src\IO.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Memory.hpp">
+    <ClInclude Include="src\Tests.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Tests.hpp">
+    <ClInclude Include="src\RAM.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
     <None Include="README.md" />
+    <None Include=".clang-format" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="images\screen1.png">

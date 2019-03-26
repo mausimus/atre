@@ -4,45 +4,51 @@
 
 namespace atre
 {
-	class ANTIC : public Chip
-	{
-		uint32_t _frameBuffer[FRAME_HEIGHT * FRAME_WIDTH];
-		uint32_t _screenBuffer[FRAME_HEIGHT * FRAME_WIDTH];
+using time_point = std::chrono::time_point<std::chrono::steady_clock>;
 
-		int _renderLine;
-		byte_t _mode;
-		word_t _width;
-		word_t _lmsAddr;
-		word_t _listAddr;
-		bool _triggerDLI;
-		bool _hs;
-		bool _listActive;
-		std::chrono::time_point<std::chrono::steady_clock> _lastFrameTime;
+struct ScanBuffer
+{
+	word_t	  scanCycle;
+	byte_t	  playfield[FRAME_WIDTH];
+	uint32_t* lineBuffer;
+};
 
-		static uint32_t _palette[128];
+class ANTIC : public Chip
+{
+	static const uint32_t s_palette[128];
 
-		void StartDisplayList();
-		void StepDisplayList();
+	uint32_t   m_renderBuffer[FRAME_HEIGHT * FRAME_WIDTH];
+	uint32_t   m_displayBuffer[FRAME_HEIGHT * FRAME_WIDTH];
+	int		   m_renderLine;
+	byte_t	   m_displayMode;
+	int		   m_playfieldWidth;
+	word_t	   m_scanAddress;
+	word_t	   m_listAddress;
+	bool	   m_triggerDLI;
+	bool	   m_hScroll;
+	bool	   m_listActive;
+	time_point m_lastFrameTime;
+	word_t	   m_scanLine;
+	ScanBuffer m_scanBuffer;
 
-		void Blank(int numBlanks);
-		void CharacterLine();
-		void MapLine();
-		void Fill(uint32_t *lineStart, uint32_t color, int width);
+	void startDisplayList();
+	void stepDisplayList();
+	void renderBlankLines(int numBlanks);
+	void renderCharacterLine();
+	void renderMapLine();
+	void fill(uint32_t* lineStart, uint32_t color, int width);
 
-	public:
-		ANTIC(CPU *cpu, Memory *memory);
-		~ANTIC();
+public:
+	ANTIC(CPU* cpu, RAM* ram);
+	~ANTIC();
 
-		word_t _lineNum;
-		word_t _lineCycle;
-		byte_t _linePlayfield[FRAME_WIDTH];
+	static uint32_t lookupColor(byte_t color);
+	const uint32_t* getDisplayBuffer() const;
+	ScanBuffer*		getScanBuffer();
 
-		uint32_t GetRGB(byte_t color) const;
-		uint32_t *GetFrameBuffer() { return _frameBuffer; }
-		uint32_t *GetScreenBuffer() { return _screenBuffer; }
-		void Reset() override;
-		void Tick() override;
-		void Write(word_t reg, byte_t val) override;
-		byte_t Read(word_t reg) override;
-	};
+	void   Reset() override;
+	void   Tick() override;
+	void   Write(word_t reg, byte_t val) override;
+	byte_t Read(word_t reg) override;
+};
 } // namespace atre

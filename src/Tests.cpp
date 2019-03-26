@@ -1,106 +1,107 @@
-#include "Tests.hpp"
-#include "Debugger.hpp"
-#include "Chips.hpp"
 #include "ANTIC.hpp"
+#include "Chips.hpp"
+#include "Debugger.hpp"
+#include "Tests.hpp"
 
 using namespace std;
 
 namespace atre
 {
-	void Tests::Assert(bool mustBeTrue)
+void Tests::Assert(bool mustBeTrue)
+{
+	if(!mustBeTrue)
 	{
-		if (!mustBeTrue)
-		{
-			throw std::runtime_error("Assertion failed");
-		}
-		else
-		{
-			std::cout << "Assertion passed" << std::endl;
-		}
+		throw std::runtime_error("Assertion failed");
 	}
-
-	void Tests::FunctionalTest(Atari &atari)
+	else
 	{
-		cout << "Loading FunctionalTest" << flush;
-
-		atari.Reset();
-
-		atari.mMemory->Load("6502_functional_test.bin", 0);
-		atari.mCPU->mEnableTraps = true;
-		atari.mCPU->mShowCycles = true;
-		atari.mCPU->JumpTo(0x0400);
-		atari.mCPU->BreakAt(0x3469);
+		std::cout << "Assertion passed" << std::endl;
 	}
+}
 
-	void Tests::InterruptReg(CPU *cpu, byte_t val)
-	{
-		cpu->_irqPending = val & 1;
-		cpu->_nmiPending = val & 2;
-	}
+void Tests::FunctionalTest(Atari& atari)
+{
+	cout << "Loading FunctionalTest" << flush;
 
-	void Tests::InterruptTest(Atari &atari)
-	{
-		cout << "Loading InterruptTest" << flush;
+	atari.Reset();
 
-		atari.Reset();
+	atari.RAM()->Load("6502_functional_test.bin", 0);
+	atari.CPU()->m_enableTraps = true;
+	atari.CPU()->m_showCycles  = true;
+	atari.CPU()->JumpTo(0x0400);
+	atari.CPU()->BreakAt(0x3469);
+}
 
-		std::function<void(byte_t)> interruptFunc = std::bind(&Tests::InterruptReg, atari.mCPU.get(), std::placeholders::_1);
+void Tests::InterruptReg(CPU* cpu, byte_t val)
+{
+	cpu->m_irqPending = val & 1;
+	cpu->m_nmiPending = val & 2;
+}
 
-		auto interruptRegister = make_shared<FeedbackRegister>(interruptFunc);
-		atari.mMemory->MapFeedbackRegister(0xBFFC, interruptRegister);
+void Tests::InterruptTest(Atari& atari)
+{
+	cout << "Loading InterruptTest" << flush;
 
-		atari.mMemory->Load("6502_interrupt_test.bin", 0xa);
-		atari.mCPU->mEnableTraps = true;
-		atari.mCPU->JumpTo(0x0400);
-		atari.mMemory->Set(0xBFFC, 0);
-		atari.mCPU->BreakAt(0x06F5);
-	}
+	atari.Reset();
 
-	void Tests::AllSuiteA(Atari &atari)
-	{
-		cout << "Loading AllSuiteA" << flush;
+	std::function<void(byte_t)> interruptFunc =
+		std::bind(&Tests::InterruptReg, atari.CPU(), std::placeholders::_1);
 
-		atari.Reset();
+	auto interruptRegister = make_shared<FeedbackRegister>(interruptFunc);
+	atari.RAM()->MapFeedbackRegister(0xBFFC, interruptRegister);
 
-		atari.mMemory->Load("AllSuiteA.bin", 0x4000);
-		atari.mCPU->mEnableTraps = true;
-		atari.mCPU->mShowCycles = true;
-		atari.mCPU->JumpTo(0x4000);
-		atari.mCPU->BreakAt(0x45C0);
+	atari.RAM()->Load("6502_interrupt_test.bin", 0xa);
+	atari.CPU()->m_enableTraps = true;
+	atari.CPU()->JumpTo(0x0400);
+	atari.RAM()->Set(0xBFFC, 0);
+	atari.CPU()->BreakAt(0x06F5);
+}
 
-		//Assert(atari.mMemory->Get(0x0210) == 0xFF);
-	}
+void Tests::AllSuiteA(Atari& atari)
+{
+	cout << "Loading AllSuiteA" << flush;
 
-	void Tests::TimingTest(Atari &atari)
-	{
-		cout << "Loading TimingTest" << flush;
+	atari.Reset();
 
-		atari.Reset();
+	atari.RAM()->Load("AllSuiteA.bin", 0x4000);
+	atari.CPU()->m_enableTraps = true;
+	atari.CPU()->m_showCycles  = true;
+	atari.CPU()->JumpTo(0x4000);
+	atari.CPU()->BreakAt(0x45C0);
 
-		atari.mMemory->Load("timingtest-1.bin", 0x1000);
-		atari.mCPU->mEnableTraps = true;
-		atari.mCPU->mShowCycles = true;
-		atari.mCPU->JumpTo(0x1000);
-		atari.mCPU->BreakAt(0x1269);
+	// Assert(atari.RAM()->Get(0x0210) == 0xFF);
+}
 
-		//	Assert(atari.mCPU->Cycles() == 1141);
-	}
+void Tests::TimingTest(Atari& atari)
+{
+	cout << "Loading TimingTest" << flush;
 
-	void Tests::Boot(Atari &atari, const std::string& osROM, const std::string& carridgeROM)
-	{
-		atari.Reset();
-		//	atari.mCPU->mMemory->LoadROM("REV02.ROM", "REVC.ROM");
-		atari.mCPU->mMemory->LoadROM(osROM, carridgeROM);
-		atari.mCPU->mEnableTraps = true;
-		atari.mCPU->mShowCycles = true;
-		atari.mCPU->Reset();
-		atari.mCPU->BreakAt(0xFFFF);
-		//atari.mCPU->BreakAt(0xA000); // BASIC
-	}
+	atari.Reset();
 
-	void Tests::SelfTest(Atari &atari)
-	{
-		atari.mMemory->DirectSet(ChipRegisters::PORTB, 0b00000001);
-		atari.mCPU->JumpTo(0x5000);
-	}
+	atari.RAM()->Load("timingtest-1.bin", 0x1000);
+	atari.CPU()->m_enableTraps = true;
+	atari.CPU()->m_showCycles  = true;
+	atari.CPU()->JumpTo(0x1000);
+	atari.CPU()->BreakAt(0x1269);
+
+	//	Assert(atari.CPU()->Cycles() == 1141);
+}
+
+void Tests::Boot(Atari& atari, const std::string& osROM, const std::string& carridgeROM)
+{
+	atari.Reset();
+	//	atari.CPU()->RAM()->LoadROM("REV02.ROM", "REVC.ROM");
+	atari.CPU()->m_RAM->LoadROM(osROM, carridgeROM);
+	atari.CPU()->m_enableTraps = true;
+	atari.CPU()->m_showCycles  = true;
+	atari.CPU()->Reset();
+	atari.CPU()->BreakAt(0xFFFF);
+	// atari.CPU()->BreakAt(0xA000); // BASIC
+}
+
+void Tests::SelfTest(Atari& atari)
+{
+	atari.RAM()->DirectSet(ChipRegisters::PORTB, 0b00000001);
+	atari.CPU()->JumpTo(0x5000);
+}
 } // namespace atre

@@ -1,21 +1,36 @@
 #include "Atari.hpp"
-#include "Chips.hpp"
-#include "ANTIC.hpp"
+
+using namespace std;
 
 namespace atre
 {
-	Atari::Atari()
-	{
-		mMemory = std::make_unique<Memory>();
-		mCPU = std::make_unique<CPU>(mMemory.get());
-		mIO = std::make_unique<IO>(mCPU.get(), mMemory.get());
-		mMemory->Connect(mIO.get());
-		mCPU->Connect(mIO.get());
-	}
+Atari::Atari()
+{
+	m_RAM = make_unique<atre::RAM>();
+	m_CPU = make_unique<atre::CPU>(RAM());
+	m_IO  = make_unique<atre::IO>(CPU(), RAM());
+	m_RAM->Connect(IO());
+	m_CPU->Connect(IO());
+}
 
-	void Atari::Reset()
-	{
-		mMemory->Clear();
-		mIO->Reset();
-	}
+CPU* Atari::CPU()
+{
+	return m_CPU.get();
+}
+
+IO* Atari::IO()
+{
+	return m_IO.get();
+}
+
+RAM* Atari::RAM()
+{
+	return m_RAM.get();
+}
+
+void Atari::Reset()
+{
+	m_RAM->Clear();
+	m_IO->Reset();
+}
 } // namespace atre

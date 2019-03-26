@@ -1,20 +1,24 @@
 #pragma once
 
 #include "CPU.hpp"
-#include "Memory.hpp"
 #include "IO.hpp"
+#include "RAM.hpp"
 
 namespace atre
 {
-	class Atari
-	{
-	public:
-		Atari();
+class Atari
+{
+	std::unique_ptr<IO>	 m_IO;
+	std::unique_ptr<CPU> m_CPU;
+	std::unique_ptr<RAM> m_RAM;
 
-		void Reset();
+public:
+	Atari();
 
-		std::unique_ptr<IO> mIO;
-		std::unique_ptr<CPU> mCPU;
-		std::unique_ptr<Memory> mMemory;
-	};
+	inline CPU* CPU();
+	inline IO*	IO();
+	inline RAM* RAM();
+
+	void Reset();
+};
 } // namespace atre
