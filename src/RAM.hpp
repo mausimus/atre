@@ -35,26 +35,12 @@ public:
 	void LoadROM(const std::string& osFileName, const std::string& cartridgeFileName);
 	void MapFeedbackRegister(word_t addr, std::shared_ptr<FeedbackRegister> feedbackRegister);
 
-	virtual byte_t Get(word_t addr);
-	virtual void   Set(word_t addr, byte_t val);
-	byte_t		   DirectGet(word_t addr);
-	void		   DirectSet(word_t addr, byte_t val);
-	word_t		   GetW(word_t addr);
-	void		   SetW(word_t addr, word_t val);
+	byte_t Get(word_t addr);
+	void   Set(word_t addr, byte_t val);
+	byte_t DirectGet(word_t addr);
+	void   DirectSet(word_t addr, byte_t val);
+	word_t GetW(word_t addr);
+	void   SetW(word_t addr, word_t val);
 };
 
-class DirectMemory : public RAM
-{
-public:
-	DirectMemory() : RAM() {}
-
-	byte_t Get(word_t addr) override
-	{
-		return DirectGet(addr);
-	}
-	void Set(word_t addr, byte_t val) override
-	{
-		DirectSet(addr, val);
-	}
-};
 } // namespace atre

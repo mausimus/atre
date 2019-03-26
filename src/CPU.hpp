@@ -37,7 +37,7 @@ class CPU
 public:
 	CPU(RAM* ram);
 
-	void Attach(Debugger* debugger);
+	void Attach(Callbacks* callbacks);
 	void Connect(IO* io);
 	void Reset();
 	void IRQ();
@@ -75,7 +75,7 @@ protected:
 	bool		  m_nmiPending;
 	unsigned	  m_waitCycles;
 	RAM*		  m_RAM;
-	Debugger*	  m_debugger;
+	Callbacks*	  m_callbacks;
 	IO*			  m_IO;
 
 	const static flag_t NEGATIVE_FLAG  = 0b10000000;

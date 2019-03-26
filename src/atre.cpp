@@ -10,7 +10,8 @@ using namespace std;
 
 int main(int /*argc*/, char* /*argv*/[])
 {
-	cout << "atre Atari emulator" << endl;
+	cout << "== atre Atari emulator ==" << endl;
+	cout << "Type help for command list" << endl;
 
 	Atari	 atari;
 	Debugger debugger(&atari);
@@ -19,104 +20,101 @@ int main(int /*argc*/, char* /*argv*/[])
 	bool isExiting = false;
 	do
 	{
-		string line;
-		cout << ">" << flush;
-		getline(cin, line);
-		if(!line.length())
+		try
 		{
-			continue;
-		}
-		istringstream commands(line);
-		string		  command;
-		commands >> command;
-
-		if(command.empty())
-		{
-			continue;
-		}
-		else if(command == "exit")
-		{
-			debugger.Exit();
-			isExiting = true;
-		}
-		else if(command == "help")
-		{
-			cout << "Type `boot <os_rom_file> [cartridge_rom_file]` to start the emulator" << endl;
-			cout << "<os_rom_file> should be the Atari XL OS ROM image (16 kB, Rev B)" << endl;
-			cout << "[cartridge_rom_file] is an optional additional 8kB ROM, either BASIC or "
-					"cartridge"
-				 << endl;
-			cout << "If no cartridge ROM is loaded the system will start Self Test" << endl;
-			cout << "Use `stop` and `start` to pause the CPU and `exit` to quit" << endl;
-			cout << "[F1] = Help, [F2] = Start, [F3] = Select, [F4] = Option, [F5] = Reset, [F6] = "
-					"Break"
-				 << endl;
-			cout << "[Arrow Keys] = Joystick, [Left Ctrl] = Fire" << endl;
-		}
-		else if(command == "test1")
-		{
-			Tests::FunctionalTest(atari);
-		}
-		else if(command == "test2")
-		{
-			Tests::InterruptTest(atari);
-		}
-		else if(command == "test3")
-		{
-			Tests::AllSuiteA(atari);
-		}
-		else if(command == "test4")
-		{
-			Tests::TimingTest(atari);
-		}
-		else if(command == "start")
-		{
-			debugger.Start();
-		}
-		else if(command == "stop")
-		{
-			debugger.Stop();
-		}
-		else if(command == "boot")
-		{
-			if(commands.eof())
+			string line;
+			cout << ">" << flush;
+			getline(cin, line);
+			if(!line.length())
 			{
-				cout << "Please specify OS ROM and optionally cartridge ROM file names." << endl;
 				continue;
 			}
-			string osROM;
-			string cartridgeROM;
-			commands >> osROM;
-			if(!commands.eof())
+			istringstream commands(line);
+			string		  command;
+			commands >> command;
+
+			if(command.empty())
 			{
-				commands >> cartridgeROM;
+				continue;
 			}
-			Tests::Boot(atari, osROM, cartridgeROM);
-			debugger.Start();
+			else if(command == "exit")
+			{
+				debugger.Exit();
+				isExiting = true;
+			}
+			else if(command == "help")
+			{
+				cout << "Commands:" << endl;
+				cout << "- boot <os_rom_file> [cartridge_rom_file]: start the emulator" << endl;
+				cout << "  <os_rom_file> should be the Atari XL OS ROM image (16 kB, Rev B)" << endl;
+				cout << "  [cartridge_rom_file] is an optional additional 8kB ROM (BASIC or another cartridge)" << endl;
+				cout << "- tests: run internal testing suites" << endl;
+				cout << "- start and stop: control CPU execution" << endl;
+				cout << "- exit" << endl;
+			}
+			else if(command == "tests")
+			{
+				cout << "Running test suites..." << endl;
+				Tests::FunctionalTest();
+				Tests::InterruptTest();
+				Tests::AllSuiteA();
+				Tests::TimingTest();
+			}
+			else if(command == "start")
+			{
+				debugger.Start();
+			}
+			else if(command == "stop")
+			{
+				debugger.Stop();
+			}
+			else if(command == "boot")
+			{
+				if(commands.eof())
+				{
+					cout << "Please specify OS ROM and optionally cartridge ROM file names." << endl;
+					continue;
+				}
+				string osROM;
+				string cartridgeROM;
+				commands >> osROM;
+				if(!commands.eof())
+				{
+					commands >> cartridgeROM;
+				}
+				atari.Boot(osROM, cartridgeROM);
+				cout << "[F1] = Help, [F2] = Start, [F3] = Select, [F4] = Option, [F5] = Reset, [F6] = Break" << endl;
+				cout << "[Arrow Keys] = Joystick, [Left Ctrl] = Fire" << endl;
+				debugger.Start();
+			}
+			else if(command == "dumpram")
+			{
+				debugger.DumpRAM("atre-mem.bin");
+			}
+			else if(command == "steps on")
+			{
+				debugger.Steps(true);
+			}
+			else if(command == "steps off")
+			{
+				debugger.Steps(false);
+			}
+			else if(command == "showdlist")
+			{
+				debugger.ShowDList();
+			}
+			else if(command == "callstack")
+			{
+				debugger.CallStack();
+			}
+			else if(command == "dumpstate")
+			{
+				debugger.DumpState();
+			}
 		}
-		else if(command == "dumpmem")
+		catch(exception& e)
 		{
-			debugger.DumpRAM("atre-mem.bin");
-		}
-		else if(command == "steps on")
-		{
-			debugger.Steps(true);
-		}
-		else if(command == "steps off")
-		{
-			debugger.Steps(false);
-		}
-		else if(command == "dumpdlist")
-		{
-			debugger.ShowDList();
-		}
-		else if(command == "callstack")
-		{
-			debugger.CallStack();
-		}
-		else if(command == "dumpcpu")
-		{
-			debugger.DumpState();
+			cout << "Exception: " << e.what() << endl;
 		}
 	} while(!isExiting);
 

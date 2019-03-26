@@ -13,24 +13,20 @@ Atari::Atari()
 	m_CPU->Connect(IO());
 }
 
-CPU* Atari::CPU()
-{
-	return m_CPU.get();
-}
-
-IO* Atari::IO()
-{
-	return m_IO.get();
-}
-
-RAM* Atari::RAM()
-{
-	return m_RAM.get();
-}
-
 void Atari::Reset()
 {
 	m_RAM->Clear();
 	m_IO->Reset();
 }
+
+void Atari::Boot(const string& osROM, const string& carridgeROM)
+{
+	Reset();
+	m_RAM->LoadROM(osROM, carridgeROM);
+	m_CPU->m_enableTraps = true;
+	m_CPU->m_showCycles	 = true;
+	m_CPU->Reset();
+	m_CPU->BreakAt(0xFFFF);
+}
+
 } // namespace atre

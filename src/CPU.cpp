@@ -8,14 +8,14 @@ namespace atre
 {
 CPU::CPU(RAM* ram) :
 	m_showCycles(), m_enableTraps(), m_showSteps(), m_callStack(), m_opCodeMap(), A(), X(), Y(), S(), PC(), F(), BRK(),
-	m_cycles(0), m_seconds(0), m_irqPending(), m_nmiPending(), m_waitCycles(0), m_RAM(ram), m_debugger(), m_IO()
+	m_cycles(0), m_seconds(0), m_irqPending(), m_nmiPending(), m_waitCycles(0), m_RAM(ram), m_callbacks(), m_IO()
 {
 	InitializeOPCodes();
 }
 
-void CPU::Attach(Debugger* debugger)
+void CPU::Attach(Callbacks* callbacks)
 {
-	m_debugger = debugger;
+	m_callbacks = callbacks;
 }
 
 void CPU::Connect(IO* io)
@@ -30,9 +30,9 @@ void CPU::Wait(unsigned cycles)
 
 void CPU::Reset()
 {
-	if(m_debugger)
+	if(m_callbacks)
 	{
-		m_debugger->OnReset();
+		m_callbacks->OnReset();
 	}
 	A = X = Y	 = 0;
 	F			 = CPU::IGNORED_FLAG;
@@ -89,9 +89,12 @@ byte_t CPU::StackPull()
 void CPU::Cycles(unsigned long cycles)
 {
 	m_cycles += cycles;
-	while(cycles-- > 0)
+	if(m_IO)
 	{
-		m_IO->Tick();
+		while(cycles-- > 0)
+		{
+			m_IO->Tick();
+		}
 	}
 	if(m_cycles >= CYCLES_PER_SEC)
 	{
@@ -399,6 +402,10 @@ void CPU::NMI()
 // external interrupt
 void CPU::doIRQ()
 {
+	if(m_callbacks)
+	{
+		m_callbacks->OnIRQ();
+	}
 	StackPush(PC >> 8);
 	StackPush(PC & 0xFF);
 	StackPush(F);
@@ -410,6 +417,10 @@ void CPU::doIRQ()
 // non-masked interrupt
 void CPU::doNMI()
 {
+	if(m_callbacks)
+	{
+		m_callbacks->OnNMI();
+	}
 	StackPush(PC >> 8);
 	StackPush(PC & 0xFF);
 	StackPush(F);
@@ -421,6 +432,10 @@ void CPU::doNMI()
 // Force Break
 void CPU::opBRK(word_t /*opIndex*/, AddressingMode /*adr*/)
 {
+	if(m_callbacks)
+	{
+		m_callbacks->OnBRK();
+	}
 	PC++;
 	StackPush(PC >> 8);
 	StackPush(PC & 0xFF);
@@ -1059,22 +1074,22 @@ void CPU::Execute()
 		PC += static_cast<word_t>(get<2>(opCode));
 		(this->*func)(opIndex, adr);
 
-		if(m_showSteps)
+		if(m_callbacks)
 		{
-			m_debugger->DumpState();
+			if(m_showSteps)
+			{
+				m_callbacks->DumpState();
+			}
+			if(PC == BRK)
+			{
+				m_callbacks->OnBreak();
+			}
+			if(PC == opIndex - 1 && m_enableTraps)
+			{
+				// jump to self: trap
+				m_callbacks->OnTrap();
+			}
 		}
-
-		if(PC == BRK)
-		{
-			m_debugger->OnBreak();
-		}
-
-		if(PC == opIndex - 1 && m_enableTraps)
-		{
-			// jump to self: trap
-			m_debugger->OnTrap();
-		}
-
 		Cycles(get<3>(opCode));
 	}
 	else

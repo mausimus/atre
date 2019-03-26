@@ -26,9 +26,7 @@ void RAM::Connect(IO* io)
 
 void RAM::Move(word_t startAddr, word_t destAddr, word_t size)
 {
-	memcpy(reinterpret_cast<char*>(m_bytes) + destAddr,
-		   reinterpret_cast<char*>(m_bytes) + startAddr,
-		   size);
+	memcpy(reinterpret_cast<char*>(m_bytes) + destAddr, reinterpret_cast<char*>(m_bytes) + startAddr, size);
 	memset(reinterpret_cast<char*>(m_bytes) + startAddr, 0, size);
 }
 
@@ -39,6 +37,11 @@ void RAM::MapFeedbackRegister(word_t addr, shared_ptr<FeedbackRegister> feedback
 
 byte_t RAM::Get(word_t addr)
 {
+	if(!m_IO)
+	{
+		return DirectGet(addr);
+	}
+
 	if(addr >= 0xD000 && addr < 0xD800)
 	{
 		return m_IO->Read(addr);
@@ -74,6 +77,17 @@ void RAM::DirectSet(word_t addr, byte_t val)
 
 void RAM::Set(word_t addr, byte_t val)
 {
+	if(m_feedbackRegisters.find(addr) != m_feedbackRegisters.end())
+	{
+		m_feedbackRegisters[addr]->writeFunc(val);
+	}
+
+	if(!m_IO)
+	{
+		DirectSet(addr, val);
+		return;
+	}
+
 	if(addr >= 0xD000 && addr < 0xD800)
 	{
 		m_IO->Write(addr, val);
@@ -98,17 +112,11 @@ void RAM::Set(word_t addr, byte_t val)
 	}
 	if(addr >= 0x5000 && addr < 0x5800)
 	{
-		if(!(DirectGet(ChipRegisters::PORTB) & 1) ||
-		   DirectGet(ChipRegisters::PORTB) & 128) // self-test disabled
+		if(!(DirectGet(ChipRegisters::PORTB) & 1) || DirectGet(ChipRegisters::PORTB) & 128) // self-test disabled
 		{
 			DirectSet(addr, val);
 		}
 		return;
-	}
-
-	if(m_feedbackRegisters.find(addr) != m_feedbackRegisters.end())
-	{
-		m_feedbackRegisters[addr]->writeFunc(val);
 	}
 
 	m_bytes[addr] = val;
@@ -126,34 +134,34 @@ void RAM::SetW(word_t addr, word_t val)
 	Set(addr + 1, static_cast<byte_t>(val >> 8));
 }
 
-void RAM::InternalLoad(const std::string& fileName, byte_t* addr)
+void RAM::InternalLoad(const string& fileName, byte_t* addr)
 {
 	if(!fileName.length())
 	{
 		return;
 	}
-	std::ifstream ifs(fileName, std::ios_base::binary);
+	ifstream ifs(fileName, ios_base::binary);
 
 	if(!ifs.good())
 	{
-		throw std::runtime_error("Unable to open file");
+		throw runtime_error("Unable to open file");
 	}
 
-	ifs.seekg(0, std::ios_base::end);
+	ifs.seekg(0, ios_base::end);
 	auto size = ifs.tellg();
-	ifs.seekg(0, std::ios_base::beg);
+	ifs.seekg(0, ios_base::beg);
 
 	ifs.read(reinterpret_cast<char*>(addr), size);
 
 	ifs.close();
 }
 
-void RAM::Load(const std::string& fileName, word_t startAddr)
+void RAM::Load(const string& fileName, word_t startAddr)
 {
 	InternalLoad(fileName, m_bytes + startAddr);
 }
 
-void RAM::LoadROM(const std::string& osFileName, const std::string& cartridgeFileName)
+void RAM::LoadROM(const string& osFileName, const string& cartridgeFileName)
 {
 	InternalLoad(osFileName, m_osROM);
 	InternalLoad(cartridgeFileName, m_cartridgeROM);
