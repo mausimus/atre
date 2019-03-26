@@ -31,9 +31,6 @@ enum class AddressingMode
 
 class CPU
 {
-	friend class Debugger;
-	friend class Tests;
-
 public:
 	CPU(RAM* ram);
 
@@ -57,7 +54,10 @@ public:
 	bool										m_showSteps;
 	std::vector<std::pair<word_t, std::string>> m_callStack;
 
-protected:
+private:
+	friend class Debugger;
+	friend class Tests;
+
 	typedef void (atre::CPU::*OPFunction)(word_t, AddressingMode);
 	typedef std::tuple<OPFunction, AddressingMode, int /*bytes*/, int /*cycles*/> OPCode;
 

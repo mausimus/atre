@@ -5,8 +5,6 @@
 
 namespace atre
 {
-struct ScanBuffer;
-
 enum ChipRegisters
 {
 	// GTIA
@@ -94,12 +92,15 @@ enum ChipRegisters
 	HSCROL = 0xD404
 };
 
+struct ScanBuffer
+{
+	word_t	  scanCycle;
+	byte_t	  playfield[FRAME_WIDTH];
+	uint32_t* lineBuffer;
+};
+
 class Chip
 {
-protected:
-	CPU* m_CPU;
-	RAM* m_RAM;
-
 public:
 	Chip(CPU* cpu, RAM* ram) : m_CPU(cpu), m_RAM(ram) {}
 
@@ -109,26 +110,14 @@ public:
 	virtual void   Reset() {}
 
 	virtual ~Chip() {}
+
+protected:
+	CPU* m_CPU;
+	RAM* m_RAM;
 };
 
 class GTIA : public Chip
 {
-	ScanBuffer* m_scanBuffer;
-	bool		m_optionKey;
-	bool		m_selectKey;
-	bool		m_startKey;
-	bool		m_joyFire;
-	byte_t		m_collisions[16];
-	byte_t		m_playerPos[FRAME_WIDTH];
-
-	bool DrawMissile(word_t posRegister, word_t colorRegister, int shift, word_t collisionRegister);
-	bool DrawPlayer(word_t posRegister,
-					word_t colorRegister,
-					word_t maskRegister,
-					word_t sizeRegister,
-					word_t collisionRegister,
-					int	   num);
-
 public:
 	GTIA(CPU* cpu, RAM* ram, ScanBuffer* scanBuffer);
 
@@ -152,19 +141,27 @@ public:
 	{
 		m_joyFire = state;
 	}
+
+private:
+	ScanBuffer* m_scanBuffer;
+	bool		m_optionKey;
+	bool		m_selectKey;
+	bool		m_startKey;
+	bool		m_joyFire;
+	byte_t		m_collisions[16];
+	byte_t		m_playerPos[FRAME_WIDTH];
+
+	bool DrawMissile(word_t posRegister, word_t colorRegister, int shift, word_t collisionRegister);
+	bool DrawPlayer(word_t posRegister,
+					word_t colorRegister,
+					word_t maskRegister,
+					word_t sizeRegister,
+					word_t collisionRegister,
+					int	   num);
 };
 
 class POKEY : public Chip
 {
-	std::vector<byte_t> m_serialOut;
-	byte_t				m_irqStatus;
-	byte_t				m_scanCode;
-	byte_t				m_kbStat;
-	bool				m_sioComplete;
-	bool				m_keyPressed;
-	bool				m_breakPressed;
-	unsigned long		m_cycles;
-
 public:
 	POKEY(CPU* cpu, RAM* ram);
 
@@ -176,15 +173,20 @@ public:
 	void   Write(word_t reg, byte_t val) override;
 	byte_t Read(word_t reg) override;
 	void   Tick() override;
+
+private:
+	std::vector<byte_t> m_serialOut;
+	byte_t				m_irqStatus;
+	byte_t				m_scanCode;
+	byte_t				m_kbStat;
+	bool				m_sioComplete;
+	bool				m_keyPressed;
+	bool				m_breakPressed;
+	unsigned long		m_cycles;
 };
 
 class PIA : public Chip
 {
-	bool m_joyUp;
-	bool m_joyDown;
-	bool m_joyLeft;
-	bool m_joyRight;
-
 public:
 	PIA(CPU* cpu, RAM* ram);
 
@@ -208,5 +210,11 @@ public:
 	void   Reset() override;
 	void   Write(word_t reg, byte_t val) override;
 	byte_t Read(word_t reg) override;
+
+private:
+	bool m_joyUp;
+	bool m_joyDown;
+	bool m_joyLeft;
+	bool m_joyRight;
 };
 } // namespace atre

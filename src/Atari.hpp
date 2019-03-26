@@ -8,10 +8,6 @@ namespace atre
 {
 class Atari
 {
-	std::unique_ptr<RAM> m_RAM;
-	std::unique_ptr<CPU> m_CPU;
-	std::unique_ptr<IO>	 m_IO;
-
 public:
 	Atari();
 
@@ -32,5 +28,10 @@ public:
 
 	void Reset();
 	void Boot(const std::string& osROM, const std::string& carridgeROM);
+
+private:
+	std::unique_ptr<RAM> m_RAM;
+	std::unique_ptr<CPU> m_CPU;
+	std::unique_ptr<IO>	 m_IO;
 };
 } // namespace atre

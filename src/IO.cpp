@@ -1,12 +1,12 @@
-#include "IO.hpp"
 #include "ANTIC.hpp"
+#include "IO.hpp"
 #include <SDL.h>
 
 using namespace std;
 
 namespace atre
 {
-map<SDL_Scancode, int> IO::s_scanCodes = {
+const map<SDL_Scancode, int> IO::s_scanCodes = {
 	{SDL_SCANCODE_A, 0x3F},			{SDL_SCANCODE_B, 0x15},			  {SDL_SCANCODE_C, 0x12},
 	{SDL_SCANCODE_D, 0x3A},			{SDL_SCANCODE_E, 0x2A},			  {SDL_SCANCODE_F, 0x38},
 	{SDL_SCANCODE_G, 0x3D},			{SDL_SCANCODE_H, 0x39},			  {SDL_SCANCODE_I, 0x0D},
@@ -24,7 +24,7 @@ map<SDL_Scancode, int> IO::s_scanCodes = {
 	{SDL_SCANCODE_EQUALS, 0x0F},	{SDL_SCANCODE_LEFTBRACKET, 0x36}, {SDL_SCANCODE_RIGHTBRACKET, 0x37},
 	{SDL_SCANCODE_BACKSLASH, 0x06}, {SDL_SCANCODE_GRAVE, 0x07},		  {SDL_SCANCODE_SEMICOLON, 0x02},
 	{SDL_SCANCODE_COMMA, 0x20},		{SDL_SCANCODE_PERIOD, 0x22},	  {SDL_SCANCODE_SLASH, 0x26},
-	{SDL_SCANCODE_CAPSLOCK, 0x3C},  {SDL_SCANCODE_F1, 0x11}};
+	{SDL_SCANCODE_CAPSLOCK, 0x3C},	{SDL_SCANCODE_F1, 0x11}};
 
 IO::IO(CPU* cpu, RAM* ram) :
 	m_CPU(cpu), m_ANTIC(cpu, ram), m_GTIA(cpu, ram, m_ANTIC.getScanBuffer()), m_POKEY(cpu, ram), m_PIA(cpu, ram),
@@ -62,7 +62,7 @@ void IO::Initialize()
 void IO::Refresh(bool cpuRunning)
 {
 	// update screen
-	int   pitch = 0;
+	int	  pitch = 0;
 	void* pixelsPtr;
 	if(SDL_LockTexture(m_texture, NULL, &pixelsPtr, &pitch))
 	{
@@ -130,7 +130,7 @@ void IO::Refresh(bool cpuRunning)
 				else
 				{
 					auto ctrlStatus = e.key.keysym.mod & KMOD_CTRL;
-					auto scanCode   = s_scanCodes.find(e.key.keysym.scancode);
+					auto scanCode	= s_scanCodes.find(e.key.keysym.scancode);
 					if(scanCode != s_scanCodes.end())
 					{
 						m_POKEY.KeyDown(static_cast<byte_t>(scanCode->second), shiftStatus, ctrlStatus);

@@ -22,17 +22,6 @@ public:
 
 class Debugger : public Callbacks
 {
-	Atari*						 m_atari;
-	std::atomic_bool			 m_exiting;
-	std::atomic_bool			 m_stopping;
-	std::mutex					 m_mutex;
-	std::condition_variable		 m_running;
-	std::unique_ptr<std::thread> m_CPUThread;
-	std::unique_ptr<std::thread> m_IOThread;
-
-	void CPUThread();
-	void IOThread();
-
 public:
 	Debugger(Atari* atari);
 
@@ -54,5 +43,17 @@ public:
 	void Steps(bool);
 	void DumpRAM(const std::string& fileName);
 	void ShowDList();
+
+private:
+	Atari*						 m_atari;
+	std::atomic_bool			 m_exiting;
+	std::atomic_bool			 m_stopping;
+	std::mutex					 m_mutex;
+	std::condition_variable		 m_running;
+	std::unique_ptr<std::thread> m_CPUThread;
+	std::unique_ptr<std::thread> m_IOThread;
+
+	void CPUThread();
+	void IOThread();
 };
 } // namespace atre

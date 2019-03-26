@@ -84,7 +84,7 @@ void ANTIC::Reset()
 	m_RAM->DirectSet(ChipRegisters::NMIST, 0);
 }
 
-uint32_t ANTIC::lookupColor(byte_t color)
+uint32_t ANTIC::getColor(byte_t color)
 {
 	return s_palette[color >> 1];
 }
@@ -99,18 +99,18 @@ ScanBuffer* ANTIC::getScanBuffer()
 	return &m_scanBuffer;
 }
 
-void ANTIC::renderBlankLines(int numLines)
+void ANTIC::RenderBlankLines(int numLines)
 {
 	while(numLines-- > 0)
 	{
 		const auto bgColor	 = m_RAM->Get(ChipRegisters::COLBK);
 		const auto lineStart = m_renderBuffer + m_renderLine * FRAME_WIDTH;
-		fill(lineStart, lookupColor(bgColor), FRAME_WIDTH);
+		Fill(lineStart, getColor(bgColor), FRAME_WIDTH);
 		m_renderLine++;
 	}
 }
 
-void ANTIC::fill(uint32_t* lineStart, uint32_t color, int width)
+void ANTIC::Fill(uint32_t* lineStart, uint32_t color, int width)
 {
 	while(width--)
 	{
@@ -119,10 +119,10 @@ void ANTIC::fill(uint32_t* lineStart, uint32_t color, int width)
 	}
 }
 
-void ANTIC::renderMapLine()
+void ANTIC::RenderMapLine()
 {
 	const auto bgColor		= m_RAM->Get(ChipRegisters::COLBK);
-	const auto outsideColor = lookupColor(bgColor);
+	const auto outsideColor = getColor(bgColor);
 	const auto blankWidth	= (FRAME_WIDTH - m_playfieldWidth) / 2;
 	memset(m_scanBuffer.playfield, 0, FRAME_WIDTH);
 
@@ -155,7 +155,7 @@ void ANTIC::renderMapLine()
 	for(auto py = 0; py < pixelHeight; py++)
 	{
 		const auto linePtr = m_renderBuffer + m_renderLine * FRAME_WIDTH;
-		fill(linePtr, outsideColor, blankWidth);
+		Fill(linePtr, outsideColor, blankWidth);
 		for(word_t i = 0; i < bytesPerLine; i++)
 		{
 			byte_t pixelData = m_RAM->Get(m_scanAddress + i);
@@ -166,16 +166,16 @@ void ANTIC::renderMapLine()
 				switch(colorIndex)
 				{
 				case 1:
-					colorValue = lookupColor(m_RAM->Get(ChipRegisters::COLPF0));
+					colorValue = getColor(m_RAM->Get(ChipRegisters::COLPF0));
 					break;
 				case 2:
-					colorValue = lookupColor(m_RAM->Get(ChipRegisters::COLPF1));
+					colorValue = getColor(m_RAM->Get(ChipRegisters::COLPF1));
 					break;
 				case 3:
-					colorValue = lookupColor(m_RAM->Get(ChipRegisters::COLPF2));
+					colorValue = getColor(m_RAM->Get(ChipRegisters::COLPF2));
 					break;
 				default:
-					colorValue = lookupColor(bgColor);
+					colorValue = getColor(bgColor);
 					break;
 				}
 				for(auto px = 0; px < pixelWidth; px++)
@@ -189,18 +189,18 @@ void ANTIC::renderMapLine()
 			}
 		}
 
-		fill(linePtr + FRAME_WIDTH - blankWidth, outsideColor, blankWidth);
+		Fill(linePtr + FRAME_WIDTH - blankWidth, outsideColor, blankWidth);
 		m_renderLine++;
 	}
 	m_scanAddress += bytesPerLine;
 }
 
-void ANTIC::renderCharacterLine()
+void ANTIC::RenderCharacterLine()
 {
 	const auto	 backgroundColor = m_RAM->Get(ChipRegisters::COLBK);
 	const auto	 textBgColor	 = m_RAM->Get(ChipRegisters::COLPF2);
 	const auto	 textFgColor	 = m_RAM->Get(ChipRegisters::COLPF1);
-	const auto	 outsideColor	 = lookupColor(backgroundColor);
+	const auto	 outsideColor	 = getColor(backgroundColor);
 	const word_t characterMap	 = m_RAM->Get(ChipRegisters::CHBASE) << 8;
 	const auto	 blinkState		 = m_RAM->Get(ChipRegisters::CHACTL) & 0b11;
 
@@ -222,15 +222,15 @@ void ANTIC::renderCharacterLine()
 	const auto charsPerLine	 = static_cast<word_t>(m_playfieldWidth / charWidth);
 	const auto hScrollAmount = m_hScroll ? m_RAM->DirectGet(ChipRegisters::HSCROL) * 2 : 0;
 
-	auto foreColor = lookupColor((textBgColor & 0b11110000) + (textFgColor & 0b1111));
-	auto backColor = lookupColor(textBgColor);
+	auto foreColor = getColor((textBgColor & 0b11110000) + (textFgColor & 0b1111));
+	auto backColor = getColor(textBgColor);
 
 	for(auto charLine = 0; charLine < 8; charLine++)
 	{
 		for(auto by = 0; by < bitHeight; by++)
 		{
 			const auto linePtr = m_renderBuffer + m_renderLine * FRAME_WIDTH;
-			fill(linePtr, outsideColor, blankWidth);
+			Fill(linePtr, outsideColor, blankWidth);
 			for(word_t n = 0; n < charsPerLine; n++)
 			{
 				// line l of character n
@@ -259,16 +259,16 @@ void ANTIC::renderCharacterLine()
 					switch(charNo >> 6)
 					{
 					case 0:
-						foreColor = lookupColor(m_RAM->Get(ChipRegisters::COLPF0));
+						foreColor = getColor(m_RAM->Get(ChipRegisters::COLPF0));
 						break;
 					case 1:
-						foreColor = lookupColor(m_RAM->Get(ChipRegisters::COLPF1));
+						foreColor = getColor(m_RAM->Get(ChipRegisters::COLPF1));
 						break;
 					case 2:
-						foreColor = lookupColor(m_RAM->Get(ChipRegisters::COLPF2));
+						foreColor = getColor(m_RAM->Get(ChipRegisters::COLPF2));
 						break;
 					case 3:
-						foreColor = lookupColor(m_RAM->Get(ChipRegisters::COLPF3));
+						foreColor = getColor(m_RAM->Get(ChipRegisters::COLPF3));
 						break;
 					}
 					charNo &= 0b111111;
@@ -293,14 +293,14 @@ void ANTIC::renderCharacterLine()
 					charSlice >>= 1;
 				}
 			}
-			fill(linePtr + FRAME_WIDTH - blankWidth, outsideColor, blankWidth);
+			Fill(linePtr + FRAME_WIDTH - blankWidth, outsideColor, blankWidth);
 			m_renderLine++;
 		}
 	}
 	m_scanAddress += charsPerLine;
 }
 
-void ANTIC::startDisplayList()
+void ANTIC::StartDisplayList()
 {
 	m_renderLine = TOP_SCANLINES;
 
@@ -316,7 +316,7 @@ void ANTIC::startDisplayList()
 	m_listActive  = true;
 }
 
-void ANTIC::stepDisplayList()
+void ANTIC::StepDisplayList()
 {
 	m_triggerDLI = false;
 
@@ -359,7 +359,7 @@ void ANTIC::stepDisplayList()
 	case 0:
 	{
 		const auto numBlanks = ((instr >> 4) & 0b111) + 1;
-		renderBlankLines(numBlanks);
+		RenderBlankLines(numBlanks);
 		m_listAddress++;
 		break;
 	}
@@ -369,7 +369,7 @@ void ANTIC::stepDisplayList()
 		if(LMS)
 		{
 			// blanks until the end
-			renderBlankLines(VBLANK_SCANLINE - m_renderLine);
+			RenderBlankLines(VBLANK_SCANLINE - m_renderLine);
 		}
 		break;
 	}
@@ -382,11 +382,11 @@ void ANTIC::stepDisplayList()
 		}
 		if(m_displayMode < 8)
 		{
-			renderCharacterLine();
+			RenderCharacterLine();
 		}
 		else
 		{
-			renderMapLine();
+			RenderMapLine();
 		}
 		m_listAddress++;
 	}
@@ -407,7 +407,7 @@ void ANTIC::Tick()
 		if(m_scanLine >= m_renderLine)
 		{
 			// catch up drawing with tracing
-			stepDisplayList();
+			StepDisplayList();
 		}
 		// if we've started tracing the last line of the instruction and there was a
 		// DLI request, trigger
@@ -434,7 +434,7 @@ void ANTIC::Tick()
 		else if(m_scanLine == TOTAL_SCANLINES)
 		{
 			m_scanLine = 0;
-			startDisplayList();
+			StartDisplayList();
 
 			const chrono::duration<double> frameTime = chrono::steady_clock::now() - m_lastFrameTime;
 			if(frameTime.count() < FRAME_TIME)

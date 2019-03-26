@@ -119,8 +119,8 @@ void POKEY::Write(word_t addr, byte_t val)
 }
 
 POKEY::POKEY(CPU* cpu, RAM* ram) :
-	Chip(cpu, ram), m_serialOut(), m_irqStatus(0), m_scanCode(), m_kbStat(), m_sioComplete(),
-	m_keyPressed(), m_breakPressed(), m_cycles()
+	Chip(cpu, ram), m_serialOut(), m_irqStatus(0), m_scanCode(), m_kbStat(), m_sioComplete(), m_keyPressed(),
+	m_breakPressed(), m_cycles()
 {}
 
 void POKEY::KeyDown(byte_t scanCode, bool shiftStatus, bool ctrlStatus)
@@ -307,8 +307,8 @@ void PIA::Reset()
 }
 
 GTIA::GTIA(CPU* cpu, RAM* memory, ScanBuffer* scanBuffer) :
-	Chip(cpu, memory), m_scanBuffer(scanBuffer), m_optionKey(), m_selectKey(), m_startKey(),
-	m_joyFire(), m_collisions(), m_playerPos()
+	Chip(cpu, memory), m_scanBuffer(scanBuffer), m_optionKey(), m_selectKey(), m_startKey(), m_joyFire(),
+	m_collisions(), m_playerPos()
 {
 	memset(m_collisions, 0, sizeof(m_collisions));
 	memset(m_playerPos, 0, sizeof(m_playerPos));
@@ -425,10 +425,7 @@ void GTIA::Tick()
 	}
 }
 
-bool GTIA::DrawMissile(word_t posRegister,
-					   word_t colorRegister,
-					   int	  shift,
-					   word_t collisionRegister)
+bool GTIA::DrawMissile(word_t posRegister, word_t colorRegister, int shift, word_t collisionRegister)
 {
 	const auto hPos = m_RAM->DirectGet(posRegister);
 
@@ -437,7 +434,7 @@ bool GTIA::DrawMissile(word_t posRegister,
 	{
 		const auto distFromCenter = hPos - 0x80;
 		const auto framePos		  = (FRAME_WIDTH / 2) + distFromCenter * 2;
-		const auto color		  = ANTIC::lookupColor(m_RAM->DirectGet(colorRegister));
+		const auto color		  = ANTIC::getColor(m_RAM->DirectGet(colorRegister));
 		const auto bitMask		  = (m_RAM->DirectGet(ChipRegisters::GRAFM) >> shift) & 0b11;
 		if(bitMask & 0b10)
 		{
@@ -446,13 +443,11 @@ bool GTIA::DrawMissile(word_t posRegister,
 			m_scanBuffer->lineBuffer[framePos + 1] = color;
 			if(m_scanBuffer->playfield[framePos])
 			{
-				m_collisions[collisionRegister & 0xF] |=
-					(1 << (m_scanBuffer->playfield[framePos] - 1));
+				m_collisions[collisionRegister & 0xF] |= (1 << (m_scanBuffer->playfield[framePos] - 1));
 			}
 			if(m_scanBuffer->playfield[framePos + 1])
 			{
-				m_collisions[collisionRegister & 0xF] |=
-					(1 << (m_scanBuffer->playfield[framePos + 1] - 1));
+				m_collisions[collisionRegister & 0xF] |= (1 << (m_scanBuffer->playfield[framePos + 1] - 1));
 			}
 		}
 		if(bitMask & 0b1)
@@ -462,13 +457,11 @@ bool GTIA::DrawMissile(word_t posRegister,
 			m_scanBuffer->lineBuffer[framePos + 3] = color;
 			if(m_scanBuffer->playfield[framePos + 2])
 			{
-				m_collisions[collisionRegister & 0xF] |=
-					(1 << (m_scanBuffer->playfield[framePos + 2] - 1));
+				m_collisions[collisionRegister & 0xF] |= (1 << (m_scanBuffer->playfield[framePos + 2] - 1));
 			}
 			if(m_scanBuffer->playfield[framePos + 3])
 			{
-				m_collisions[collisionRegister & 0xF] |=
-					(1 << (m_scanBuffer->playfield[framePos + 3] - 1));
+				m_collisions[collisionRegister & 0xF] |= (1 << (m_scanBuffer->playfield[framePos + 3] - 1));
 			}
 		}
 	}
@@ -489,7 +482,7 @@ bool GTIA::DrawPlayer(word_t posRegister,
 	{
 		const auto distFromCenter = hPos - 0x80;
 		const auto framePos		  = (FRAME_WIDTH / 2) + distFromCenter * 2;
-		const auto color		  = ANTIC::lookupColor(m_RAM->DirectGet(colorRegister));
+		const auto color		  = ANTIC::getColor(m_RAM->DirectGet(colorRegister));
 
 		auto bitMask = m_RAM->DirectGet(maskRegister);
 		int	 size	 = 2;
@@ -522,8 +515,7 @@ bool GTIA::DrawPlayer(word_t posRegister,
 						playerDrawn = true;
 						if(m_scanBuffer->playfield[offset])
 						{
-							m_collisions[collisionRegister & 0xF] |=
-								(1 << (m_scanBuffer->playfield[offset] - 1));
+							m_collisions[collisionRegister & 0xF] |= (1 << (m_scanBuffer->playfield[offset] - 1));
 							m_playerPos[offset] |= (1 << pNo);
 						}
 					}
