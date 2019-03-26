@@ -40,6 +40,7 @@ do so correctly.
 Cross-platform C++ 17 using SDL2 for graphics and IO, tested on:
 
 * g++ 8.2 on Ubuntu 18.04
+* clang++ 6.0 on Ubuntu 18.04
 * MSVC++ 14.16 (VS 2017) on Windows 10 1809
 
 In order to start the emulator you will need an Atari OS ROM and
