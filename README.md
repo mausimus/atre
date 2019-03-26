@@ -9,7 +9,7 @@ Simple 8-bit Atari platform (XL/XE) emulator in C++
 * boots original Atari XL OS
 * runs Atari BASIC
 * passes Self Test
-* runs a classic game
+* runs a few classic games
 
 Only the necessary features to run the above have been implemented,
 the project doesn't aspire to compete with any well-established emulators!
@@ -37,12 +37,14 @@ do so correctly.
 
 ### Code
 
-Cross-platform C++ 17, reference build using gcc 7.3 and make 4.1 on Ubuntu 18.04
-and SDL 2.0.8 for graphics and IO.
+Cross-platform C++ 17 using SDL2 for graphics and IO, tested on:
 
-In order to start the emulator you will need an original Atari OS ROM and
-either the BASIC ROM or a custom game ROM (cartridge). Type _help_ in
-the debugger window for more info. No ROMs are included in this repository!
+* g++ 8.2 on Ubuntu 18.04
+* MSVC++ 14.16 (VS 2017) on Windows 10 1809
+
+In order to start the emulator you will need an Atari OS ROM and
+either the BASIC ROM or a external game ROM (cartridge). Type _help_ in
+the debugger window for more info. No ROMs included in this repository!
 
 ### Thanks
 

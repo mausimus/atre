@@ -11,11 +11,7 @@ PCH		:= src/atre.hpp
 
 LIBRARIES	:= -pthread -latomic -lSDL2 -lstdc++fs
 
-ifeq ($(OS),Windows_NT)
-EXECUTABLE	:= atre.exe
-else
 EXECUTABLE	:= atre
-endif
 
 src = $(wildcard $(SRC)/*.cpp)
 obj = $(addprefix $(OBJ)/, $(notdir $(src:.cpp=.o)))
