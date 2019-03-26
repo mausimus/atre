@@ -156,8 +156,8 @@ void Debugger::DumpRAM(const string& fileName)
 		throw std::runtime_error("Unable to open file");
 	}
 
-	byte_t visibleMem[65536];
-	for(int i = 0; i < 65536; i++)
+	byte_t visibleMem[MEM_SIZE];
+	for(word_t i = 0; i < MEM_SIZE; i++)
 	{
 		visibleMem[i] = mAtari->RAM()->Get(i);
 	}

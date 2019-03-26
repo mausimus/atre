@@ -25,7 +25,7 @@ public:
 
 class IO : public IOBase
 {
-	static std::map<SDL_Scancode, byte_t> s_scanCodes;
+	static std::map<SDL_Scancode, int> s_scanCodes;
 
 	ANTIC m_ANTIC;
 	GTIA  m_GTIA;

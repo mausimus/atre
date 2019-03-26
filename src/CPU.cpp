@@ -7,9 +7,8 @@ using namespace std;
 namespace atre
 {
 CPU::CPU(RAM* ram) :
-	m_showCycles(), m_enableTraps(), m_showSteps(), m_callStack(), m_opCodeMap(), A(), X(), Y(),
-	S(), PC(), F(), BRK(), m_cycles(0), m_seconds(0), m_irqPending(), m_nmiPending(),
-	m_waitCycles(0), m_RAM(ram), m_debugger(), m_IO()
+	m_showCycles(), m_enableTraps(), m_showSteps(), m_callStack(), m_opCodeMap(), A(), X(), Y(), S(), PC(), F(), BRK(),
+	m_cycles(0), m_seconds(0), m_irqPending(), m_nmiPending(), m_waitCycles(0), m_RAM(ram), m_debugger(), m_IO()
 {
 	InitializeOPCodes();
 }
@@ -138,7 +137,7 @@ byte_t CPU::GetOP(word_t opIndex, AddressingMode adr)
 	case AddressingMode::AbsoluteXPaged:
 	{
 		word_t baseAddr	 = m_RAM->GetW(opIndex);
-		auto   finalAddr = baseAddr + X;
+		auto   finalAddr = static_cast<word_t>(baseAddr + X);
 		if(adr == AddressingMode::AbsoluteXPaged && baseAddr >> 8 != finalAddr >> 8)
 		{
 			Cycles(1);
@@ -149,7 +148,7 @@ byte_t CPU::GetOP(word_t opIndex, AddressingMode adr)
 	case AddressingMode::AbsoluteYPaged:
 	{
 		word_t baseAddr	 = m_RAM->GetW(opIndex);
-		auto   finalAddr = baseAddr + Y;
+		auto   finalAddr = static_cast<word_t>(baseAddr + Y);
 		if(adr == AddressingMode::AbsoluteYPaged && baseAddr >> 8 != finalAddr >> 8)
 		{
 			Cycles(1);
@@ -179,7 +178,7 @@ byte_t CPU::GetOP(word_t opIndex, AddressingMode adr)
 		return m_RAM->Get(finalAddress);
 	}
 	default:
-		throw std::runtime_error("Not supported addressing mode");
+		throw runtime_error("Not supported addressing mode");
 	}
 }
 
@@ -221,14 +220,14 @@ void CPU::SetOP(word_t opIndex, AddressingMode adr, byte_t val)
 	case AddressingMode::AbsoluteX:
 	{
 		word_t baseAddr	 = m_RAM->GetW(opIndex);
-		auto   finalAddr = baseAddr + X;
+		auto   finalAddr = static_cast<word_t>(baseAddr + X);
 		m_RAM->Set(finalAddr, val);
 		break;
 	}
 	case AddressingMode::AbsoluteY:
 	{
 		word_t baseAddr	 = m_RAM->GetW(opIndex);
-		auto   finalAddr = baseAddr + Y;
+		auto   finalAddr = static_cast<word_t>(baseAddr + Y);
 		m_RAM->Set(finalAddr, val);
 		break;
 	}
@@ -252,7 +251,7 @@ void CPU::SetOP(word_t opIndex, AddressingMode adr, byte_t val)
 		break;
 	}
 	default:
-		throw std::runtime_error("Not supported addressing mode");
+		throw runtime_error("Not supported addressing mode");
 	}
 }
 
@@ -265,9 +264,9 @@ void CPU::ADC(byte_t op)
 		auto res = lhr + rhr + (IsSetFlag(CPU::CARRY_FLAG) ? 1 : 0);
 		SetFlag(CPU::CARRY_FLAG, res > 99);
 		res %= 100;
-		A = ((res / 10) << 4) + (res % 10);
-		SetFlag(CPU::NEGATIVE_FLAG, IsNegative(res));
-		SetFlag(CPU::ZERO_FLAG, IsZero(res));
+		A = static_cast<byte_t>(((res / 10) << 4) + (res % 10));
+		SetFlag(CPU::NEGATIVE_FLAG, IsNegative(static_cast<byte_t>(res)));
+		SetFlag(CPU::ZERO_FLAG, IsZero(static_cast<byte_t>(res)));
 	}
 	else
 	{
@@ -276,7 +275,8 @@ void CPU::ADC(byte_t op)
 		SetFlag(CPU::CARRY_FLAG, wresult > 255);
 		SetFlag(CPU::NEGATIVE_FLAG, IsNegative(res));
 		SetFlag(CPU::ZERO_FLAG, IsZero(res));
-		SetFlag(CPU::OVERFLOW_FLAG, IsNegative(A ^ res) & IsNegative(op ^ res));
+		SetFlag(CPU::OVERFLOW_FLAG,
+				IsNegative(static_cast<byte_t>(A ^ res)) & IsNegative(static_cast<byte_t>(op ^ res)));
 		A = res;
 	}
 }
@@ -319,7 +319,7 @@ void CPU::Branch(word_t opIndex, bool condition)
 	if(condition)
 	{
 		Cycles(1);
-		auto target = PC + static_cast<sbyte_t>(m_RAM->Get(opIndex));
+		const auto target = static_cast<word_t>(PC + static_cast<sbyte_t>(m_RAM->Get(opIndex)));
 		if(PC >> 8 != target >> 8)
 		{
 			Cycles(1);
@@ -549,13 +549,13 @@ void CPU::opJMP(word_t opIndex, AddressingMode adr)
 		break;
 	}
 	default:
-		throw std::runtime_error("Not supported addressing mode");
+		throw runtime_error("Not supported addressing mode");
 	}
 }
 
 void CPU::opJSR(word_t opIndex, AddressingMode /*adr*/)
 {
-	auto retAddress = PC - 1; // next instruction - 1
+	const auto retAddress = static_cast<word_t>(PC - 1); // next instruction - 1
 	StackPush(retAddress >> 8);
 	StackPush(retAddress & 0xFF);
 	PC = m_RAM->GetW(opIndex);
@@ -712,9 +712,9 @@ void CPU::SBC(byte_t op)
 		{
 			res += 100;
 		}
-		A = ((res / 10) << 4) + (res % 10);
-		SetFlag(CPU::NEGATIVE_FLAG, IsNegative(res));
-		SetFlag(CPU::ZERO_FLAG, IsZero(res));
+		A = static_cast<byte_t>(((res / 10) << 4) + (res % 10));
+		SetFlag(CPU::NEGATIVE_FLAG, IsNegative(static_cast<byte_t>(res)));
+		SetFlag(CPU::ZERO_FLAG, IsZero(static_cast<byte_t>(res)));
 	}
 	else
 	{
@@ -810,210 +810,203 @@ bool CPU::IsZero(byte_t op)
 void CPU::InitializeOPCodes()
 {
 	// ADC
-	m_opCodeMap[0x69] = std::make_tuple(&atre::CPU::opADC, AddressingMode::Immediate, 2, 2);
-	m_opCodeMap[0x65] = std::make_tuple(&atre::CPU::opADC, AddressingMode::ZeroPage, 2, 3);
-	m_opCodeMap[0x75] = std::make_tuple(&atre::CPU::opADC, AddressingMode::ZeroPageX, 2, 4);
-	m_opCodeMap[0x6D] = std::make_tuple(&atre::CPU::opADC, AddressingMode::Absolute, 3, 4);
-	m_opCodeMap[0x7D] = std::make_tuple(&atre::CPU::opADC, AddressingMode::AbsoluteXPaged, 3, 4);
-	m_opCodeMap[0x79] = std::make_tuple(&atre::CPU::opADC, AddressingMode::AbsoluteYPaged, 3, 4);
-	m_opCodeMap[0x61] = std::make_tuple(&atre::CPU::opADC, AddressingMode::IndexedIndirect, 2, 6);
-	m_opCodeMap[0x71] =
-		std::make_tuple(&atre::CPU::opADC, AddressingMode::IndirectIndexedPaged, 2, 5);
+	m_opCodeMap[0x69] = make_tuple(&atre::CPU::opADC, AddressingMode::Immediate, 2, 2);
+	m_opCodeMap[0x65] = make_tuple(&atre::CPU::opADC, AddressingMode::ZeroPage, 2, 3);
+	m_opCodeMap[0x75] = make_tuple(&atre::CPU::opADC, AddressingMode::ZeroPageX, 2, 4);
+	m_opCodeMap[0x6D] = make_tuple(&atre::CPU::opADC, AddressingMode::Absolute, 3, 4);
+	m_opCodeMap[0x7D] = make_tuple(&atre::CPU::opADC, AddressingMode::AbsoluteXPaged, 3, 4);
+	m_opCodeMap[0x79] = make_tuple(&atre::CPU::opADC, AddressingMode::AbsoluteYPaged, 3, 4);
+	m_opCodeMap[0x61] = make_tuple(&atre::CPU::opADC, AddressingMode::IndexedIndirect, 2, 6);
+	m_opCodeMap[0x71] = make_tuple(&atre::CPU::opADC, AddressingMode::IndirectIndexedPaged, 2, 5);
 
 	// AND
-	m_opCodeMap[0x29] = std::make_tuple(&atre::CPU::opAND, AddressingMode::Immediate, 2, 2);
-	m_opCodeMap[0x25] = std::make_tuple(&atre::CPU::opAND, AddressingMode::ZeroPage, 2, 3);
-	m_opCodeMap[0x35] = std::make_tuple(&atre::CPU::opAND, AddressingMode::ZeroPageX, 2, 4);
-	m_opCodeMap[0x2D] = std::make_tuple(&atre::CPU::opAND, AddressingMode::Absolute, 3, 4);
-	m_opCodeMap[0x3D] = std::make_tuple(&atre::CPU::opAND, AddressingMode::AbsoluteXPaged, 3, 4);
-	m_opCodeMap[0x39] = std::make_tuple(&atre::CPU::opAND, AddressingMode::AbsoluteYPaged, 3, 4);
-	m_opCodeMap[0x21] = std::make_tuple(&atre::CPU::opAND, AddressingMode::IndexedIndirect, 2, 6);
-	m_opCodeMap[0x31] =
-		std::make_tuple(&atre::CPU::opAND, AddressingMode::IndirectIndexedPaged, 2, 5);
+	m_opCodeMap[0x29] = make_tuple(&atre::CPU::opAND, AddressingMode::Immediate, 2, 2);
+	m_opCodeMap[0x25] = make_tuple(&atre::CPU::opAND, AddressingMode::ZeroPage, 2, 3);
+	m_opCodeMap[0x35] = make_tuple(&atre::CPU::opAND, AddressingMode::ZeroPageX, 2, 4);
+	m_opCodeMap[0x2D] = make_tuple(&atre::CPU::opAND, AddressingMode::Absolute, 3, 4);
+	m_opCodeMap[0x3D] = make_tuple(&atre::CPU::opAND, AddressingMode::AbsoluteXPaged, 3, 4);
+	m_opCodeMap[0x39] = make_tuple(&atre::CPU::opAND, AddressingMode::AbsoluteYPaged, 3, 4);
+	m_opCodeMap[0x21] = make_tuple(&atre::CPU::opAND, AddressingMode::IndexedIndirect, 2, 6);
+	m_opCodeMap[0x31] = make_tuple(&atre::CPU::opAND, AddressingMode::IndirectIndexedPaged, 2, 5);
 
 	// ASL
-	m_opCodeMap[0x0A] = std::make_tuple(&atre::CPU::opASL, AddressingMode::Accumulator, 1, 2);
-	m_opCodeMap[0x06] = std::make_tuple(&atre::CPU::opASL, AddressingMode::ZeroPage, 2, 5);
-	m_opCodeMap[0x16] = std::make_tuple(&atre::CPU::opASL, AddressingMode::ZeroPageX, 2, 6);
-	m_opCodeMap[0x0E] = std::make_tuple(&atre::CPU::opASL, AddressingMode::Absolute, 3, 6);
-	m_opCodeMap[0x1E] = std::make_tuple(&atre::CPU::opASL, AddressingMode::AbsoluteX, 3, 7);
+	m_opCodeMap[0x0A] = make_tuple(&atre::CPU::opASL, AddressingMode::Accumulator, 1, 2);
+	m_opCodeMap[0x06] = make_tuple(&atre::CPU::opASL, AddressingMode::ZeroPage, 2, 5);
+	m_opCodeMap[0x16] = make_tuple(&atre::CPU::opASL, AddressingMode::ZeroPageX, 2, 6);
+	m_opCodeMap[0x0E] = make_tuple(&atre::CPU::opASL, AddressingMode::Absolute, 3, 6);
+	m_opCodeMap[0x1E] = make_tuple(&atre::CPU::opASL, AddressingMode::AbsoluteX, 3, 7);
 
 	// branching
-	m_opCodeMap[0x90] = std::make_tuple(&atre::CPU::opBCC, AddressingMode::Relative, 2, 2);
-	m_opCodeMap[0xB0] = std::make_tuple(&atre::CPU::opBCS, AddressingMode::Relative, 2, 2);
-	m_opCodeMap[0xF0] = std::make_tuple(&atre::CPU::opBEQ, AddressingMode::Relative, 2, 2);
-	m_opCodeMap[0x30] = std::make_tuple(&atre::CPU::opBMI, AddressingMode::Relative, 2, 2);
-	m_opCodeMap[0xD0] = std::make_tuple(&atre::CPU::opBNE, AddressingMode::Relative, 2, 2);
-	m_opCodeMap[0x10] = std::make_tuple(&atre::CPU::opBPL, AddressingMode::Relative, 2, 2);
-	m_opCodeMap[0x50] = std::make_tuple(&atre::CPU::opBVC, AddressingMode::Relative, 2, 2);
-	m_opCodeMap[0x70] = std::make_tuple(&atre::CPU::opBVS, AddressingMode::Relative, 2, 2);
+	m_opCodeMap[0x90] = make_tuple(&atre::CPU::opBCC, AddressingMode::Relative, 2, 2);
+	m_opCodeMap[0xB0] = make_tuple(&atre::CPU::opBCS, AddressingMode::Relative, 2, 2);
+	m_opCodeMap[0xF0] = make_tuple(&atre::CPU::opBEQ, AddressingMode::Relative, 2, 2);
+	m_opCodeMap[0x30] = make_tuple(&atre::CPU::opBMI, AddressingMode::Relative, 2, 2);
+	m_opCodeMap[0xD0] = make_tuple(&atre::CPU::opBNE, AddressingMode::Relative, 2, 2);
+	m_opCodeMap[0x10] = make_tuple(&atre::CPU::opBPL, AddressingMode::Relative, 2, 2);
+	m_opCodeMap[0x50] = make_tuple(&atre::CPU::opBVC, AddressingMode::Relative, 2, 2);
+	m_opCodeMap[0x70] = make_tuple(&atre::CPU::opBVS, AddressingMode::Relative, 2, 2);
 
 	// BIT
-	m_opCodeMap[0x24] = std::make_tuple(&atre::CPU::opBIT, AddressingMode::ZeroPage, 2, 3);
-	m_opCodeMap[0x2C] = std::make_tuple(&atre::CPU::opBIT, AddressingMode::Absolute, 3, 4);
+	m_opCodeMap[0x24] = make_tuple(&atre::CPU::opBIT, AddressingMode::ZeroPage, 2, 3);
+	m_opCodeMap[0x2C] = make_tuple(&atre::CPU::opBIT, AddressingMode::Absolute, 3, 4);
 
 	// BRK
-	m_opCodeMap[0x00] = std::make_tuple(&atre::CPU::opBRK, AddressingMode::None, 1, 7);
+	m_opCodeMap[0x00] = make_tuple(&atre::CPU::opBRK, AddressingMode::None, 1, 7);
 
 	// clear flags
-	m_opCodeMap[0x18] = std::make_tuple(&atre::CPU::opCLC, AddressingMode::None, 1, 2);
-	m_opCodeMap[0xD8] = std::make_tuple(&atre::CPU::opCLD, AddressingMode::None, 1, 2);
-	m_opCodeMap[0x58] = std::make_tuple(&atre::CPU::opCLI, AddressingMode::None, 1, 2);
-	m_opCodeMap[0xB8] = std::make_tuple(&atre::CPU::opCLV, AddressingMode::None, 1, 2);
+	m_opCodeMap[0x18] = make_tuple(&atre::CPU::opCLC, AddressingMode::None, 1, 2);
+	m_opCodeMap[0xD8] = make_tuple(&atre::CPU::opCLD, AddressingMode::None, 1, 2);
+	m_opCodeMap[0x58] = make_tuple(&atre::CPU::opCLI, AddressingMode::None, 1, 2);
+	m_opCodeMap[0xB8] = make_tuple(&atre::CPU::opCLV, AddressingMode::None, 1, 2);
 
 	// comparisons
-	m_opCodeMap[0xC9] = std::make_tuple(&atre::CPU::opCMP, AddressingMode::Immediate, 2, 2);
-	m_opCodeMap[0xC5] = std::make_tuple(&atre::CPU::opCMP, AddressingMode::ZeroPage, 2, 3);
-	m_opCodeMap[0xD5] = std::make_tuple(&atre::CPU::opCMP, AddressingMode::ZeroPageX, 2, 4);
-	m_opCodeMap[0xCD] = std::make_tuple(&atre::CPU::opCMP, AddressingMode::Absolute, 3, 4);
-	m_opCodeMap[0xDD] = std::make_tuple(&atre::CPU::opCMP, AddressingMode::AbsoluteXPaged, 3, 4);
-	m_opCodeMap[0xD9] = std::make_tuple(&atre::CPU::opCMP, AddressingMode::AbsoluteYPaged, 3, 4);
-	m_opCodeMap[0xC1] = std::make_tuple(&atre::CPU::opCMP, AddressingMode::IndexedIndirect, 2, 6);
-	m_opCodeMap[0xD1] =
-		std::make_tuple(&atre::CPU::opCMP, AddressingMode::IndirectIndexedPaged, 2, 5);
-	m_opCodeMap[0xE0] = std::make_tuple(&atre::CPU::opCPX, AddressingMode::Immediate, 2, 2);
-	m_opCodeMap[0xE4] = std::make_tuple(&atre::CPU::opCPX, AddressingMode::ZeroPage, 2, 3);
-	m_opCodeMap[0xEC] = std::make_tuple(&atre::CPU::opCPX, AddressingMode::Absolute, 3, 4);
-	m_opCodeMap[0xC0] = std::make_tuple(&atre::CPU::opCPY, AddressingMode::Immediate, 2, 2);
-	m_opCodeMap[0xC4] = std::make_tuple(&atre::CPU::opCPY, AddressingMode::ZeroPage, 2, 3);
-	m_opCodeMap[0xCC] = std::make_tuple(&atre::CPU::opCPY, AddressingMode::Absolute, 3, 4);
+	m_opCodeMap[0xC9] = make_tuple(&atre::CPU::opCMP, AddressingMode::Immediate, 2, 2);
+	m_opCodeMap[0xC5] = make_tuple(&atre::CPU::opCMP, AddressingMode::ZeroPage, 2, 3);
+	m_opCodeMap[0xD5] = make_tuple(&atre::CPU::opCMP, AddressingMode::ZeroPageX, 2, 4);
+	m_opCodeMap[0xCD] = make_tuple(&atre::CPU::opCMP, AddressingMode::Absolute, 3, 4);
+	m_opCodeMap[0xDD] = make_tuple(&atre::CPU::opCMP, AddressingMode::AbsoluteXPaged, 3, 4);
+	m_opCodeMap[0xD9] = make_tuple(&atre::CPU::opCMP, AddressingMode::AbsoluteYPaged, 3, 4);
+	m_opCodeMap[0xC1] = make_tuple(&atre::CPU::opCMP, AddressingMode::IndexedIndirect, 2, 6);
+	m_opCodeMap[0xD1] = make_tuple(&atre::CPU::opCMP, AddressingMode::IndirectIndexedPaged, 2, 5);
+	m_opCodeMap[0xE0] = make_tuple(&atre::CPU::opCPX, AddressingMode::Immediate, 2, 2);
+	m_opCodeMap[0xE4] = make_tuple(&atre::CPU::opCPX, AddressingMode::ZeroPage, 2, 3);
+	m_opCodeMap[0xEC] = make_tuple(&atre::CPU::opCPX, AddressingMode::Absolute, 3, 4);
+	m_opCodeMap[0xC0] = make_tuple(&atre::CPU::opCPY, AddressingMode::Immediate, 2, 2);
+	m_opCodeMap[0xC4] = make_tuple(&atre::CPU::opCPY, AddressingMode::ZeroPage, 2, 3);
+	m_opCodeMap[0xCC] = make_tuple(&atre::CPU::opCPY, AddressingMode::Absolute, 3, 4);
 
 	// increment/decrement
-	m_opCodeMap[0xE6] = std::make_tuple(&atre::CPU::opINC, AddressingMode::ZeroPage, 2, 5);
-	m_opCodeMap[0xF6] = std::make_tuple(&atre::CPU::opINC, AddressingMode::ZeroPageX, 2, 6);
-	m_opCodeMap[0xEE] = std::make_tuple(&atre::CPU::opINC, AddressingMode::Absolute, 3, 6);
-	m_opCodeMap[0xFE] = std::make_tuple(&atre::CPU::opINC, AddressingMode::AbsoluteX, 3, 7);
-	m_opCodeMap[0xE8] = std::make_tuple(&atre::CPU::opINX, AddressingMode::None, 1, 2);
-	m_opCodeMap[0xC8] = std::make_tuple(&atre::CPU::opINY, AddressingMode::None, 1, 2);
-	m_opCodeMap[0xC6] = std::make_tuple(&atre::CPU::opDEC, AddressingMode::ZeroPage, 2, 5);
-	m_opCodeMap[0xD6] = std::make_tuple(&atre::CPU::opDEC, AddressingMode::ZeroPageX, 2, 6);
-	m_opCodeMap[0xCE] = std::make_tuple(&atre::CPU::opDEC, AddressingMode::Absolute, 3, 6);
-	m_opCodeMap[0xDE] = std::make_tuple(&atre::CPU::opDEC, AddressingMode::AbsoluteX, 3, 7);
-	m_opCodeMap[0xCA] = std::make_tuple(&atre::CPU::opDEX, AddressingMode::None, 1, 2);
-	m_opCodeMap[0x88] = std::make_tuple(&atre::CPU::opDEY, AddressingMode::None, 1, 2);
+	m_opCodeMap[0xE6] = make_tuple(&atre::CPU::opINC, AddressingMode::ZeroPage, 2, 5);
+	m_opCodeMap[0xF6] = make_tuple(&atre::CPU::opINC, AddressingMode::ZeroPageX, 2, 6);
+	m_opCodeMap[0xEE] = make_tuple(&atre::CPU::opINC, AddressingMode::Absolute, 3, 6);
+	m_opCodeMap[0xFE] = make_tuple(&atre::CPU::opINC, AddressingMode::AbsoluteX, 3, 7);
+	m_opCodeMap[0xE8] = make_tuple(&atre::CPU::opINX, AddressingMode::None, 1, 2);
+	m_opCodeMap[0xC8] = make_tuple(&atre::CPU::opINY, AddressingMode::None, 1, 2);
+	m_opCodeMap[0xC6] = make_tuple(&atre::CPU::opDEC, AddressingMode::ZeroPage, 2, 5);
+	m_opCodeMap[0xD6] = make_tuple(&atre::CPU::opDEC, AddressingMode::ZeroPageX, 2, 6);
+	m_opCodeMap[0xCE] = make_tuple(&atre::CPU::opDEC, AddressingMode::Absolute, 3, 6);
+	m_opCodeMap[0xDE] = make_tuple(&atre::CPU::opDEC, AddressingMode::AbsoluteX, 3, 7);
+	m_opCodeMap[0xCA] = make_tuple(&atre::CPU::opDEX, AddressingMode::None, 1, 2);
+	m_opCodeMap[0x88] = make_tuple(&atre::CPU::opDEY, AddressingMode::None, 1, 2);
 
 	// EOR
-	m_opCodeMap[0x49] = std::make_tuple(&atre::CPU::opEOR, AddressingMode::Immediate, 2, 2);
-	m_opCodeMap[0x45] = std::make_tuple(&atre::CPU::opEOR, AddressingMode::ZeroPage, 2, 3);
-	m_opCodeMap[0x55] = std::make_tuple(&atre::CPU::opEOR, AddressingMode::ZeroPageX, 2, 4);
-	m_opCodeMap[0x4D] = std::make_tuple(&atre::CPU::opEOR, AddressingMode::Absolute, 3, 4);
-	m_opCodeMap[0x5D] = std::make_tuple(&atre::CPU::opEOR, AddressingMode::AbsoluteXPaged, 3, 4);
-	m_opCodeMap[0x59] = std::make_tuple(&atre::CPU::opEOR, AddressingMode::AbsoluteYPaged, 3, 4);
-	m_opCodeMap[0x41] = std::make_tuple(&atre::CPU::opEOR, AddressingMode::IndexedIndirect, 2, 6);
-	m_opCodeMap[0x51] =
-		std::make_tuple(&atre::CPU::opEOR, AddressingMode::IndirectIndexedPaged, 2, 5);
+	m_opCodeMap[0x49] = make_tuple(&atre::CPU::opEOR, AddressingMode::Immediate, 2, 2);
+	m_opCodeMap[0x45] = make_tuple(&atre::CPU::opEOR, AddressingMode::ZeroPage, 2, 3);
+	m_opCodeMap[0x55] = make_tuple(&atre::CPU::opEOR, AddressingMode::ZeroPageX, 2, 4);
+	m_opCodeMap[0x4D] = make_tuple(&atre::CPU::opEOR, AddressingMode::Absolute, 3, 4);
+	m_opCodeMap[0x5D] = make_tuple(&atre::CPU::opEOR, AddressingMode::AbsoluteXPaged, 3, 4);
+	m_opCodeMap[0x59] = make_tuple(&atre::CPU::opEOR, AddressingMode::AbsoluteYPaged, 3, 4);
+	m_opCodeMap[0x41] = make_tuple(&atre::CPU::opEOR, AddressingMode::IndexedIndirect, 2, 6);
+	m_opCodeMap[0x51] = make_tuple(&atre::CPU::opEOR, AddressingMode::IndirectIndexedPaged, 2, 5);
 
 	// JMP
-	m_opCodeMap[0x4C] = std::make_tuple(&atre::CPU::opJMP, AddressingMode::Absolute, 3, 3);
-	m_opCodeMap[0x6C] = std::make_tuple(&atre::CPU::opJMP, AddressingMode::Indirect, 3, 5);
+	m_opCodeMap[0x4C] = make_tuple(&atre::CPU::opJMP, AddressingMode::Absolute, 3, 3);
+	m_opCodeMap[0x6C] = make_tuple(&atre::CPU::opJMP, AddressingMode::Indirect, 3, 5);
 
 	// subroutine
-	m_opCodeMap[0x20] = std::make_tuple(&atre::CPU::opJSR, AddressingMode::Absolute, 3, 6);
-	m_opCodeMap[0x60] = std::make_tuple(&atre::CPU::opRTS, AddressingMode::Absolute, 1, 6);
+	m_opCodeMap[0x20] = make_tuple(&atre::CPU::opJSR, AddressingMode::Absolute, 3, 6);
+	m_opCodeMap[0x60] = make_tuple(&atre::CPU::opRTS, AddressingMode::Absolute, 1, 6);
 
 	// load
-	m_opCodeMap[0xA9] = std::make_tuple(&atre::CPU::opLDA, AddressingMode::Immediate, 2, 2);
-	m_opCodeMap[0xA5] = std::make_tuple(&atre::CPU::opLDA, AddressingMode::ZeroPage, 2, 3);
-	m_opCodeMap[0xB5] = std::make_tuple(&atre::CPU::opLDA, AddressingMode::ZeroPageX, 2, 4);
-	m_opCodeMap[0xAD] = std::make_tuple(&atre::CPU::opLDA, AddressingMode::Absolute, 3, 4);
-	m_opCodeMap[0xBD] = std::make_tuple(&atre::CPU::opLDA, AddressingMode::AbsoluteXPaged, 3, 4);
-	m_opCodeMap[0xB9] = std::make_tuple(&atre::CPU::opLDA, AddressingMode::AbsoluteYPaged, 3, 4);
-	m_opCodeMap[0xA1] = std::make_tuple(&atre::CPU::opLDA, AddressingMode::IndexedIndirect, 2, 6);
-	m_opCodeMap[0xB1] =
-		std::make_tuple(&atre::CPU::opLDA, AddressingMode::IndirectIndexedPaged, 2, 5);
-	m_opCodeMap[0xA2] = std::make_tuple(&atre::CPU::opLDX, AddressingMode::Immediate, 2, 2);
-	m_opCodeMap[0xA6] = std::make_tuple(&atre::CPU::opLDX, AddressingMode::ZeroPage, 2, 3);
-	m_opCodeMap[0xB6] = std::make_tuple(&atre::CPU::opLDX, AddressingMode::ZeroPageY, 2, 4);
-	m_opCodeMap[0xAE] = std::make_tuple(&atre::CPU::opLDX, AddressingMode::Absolute, 3, 4);
-	m_opCodeMap[0xBE] = std::make_tuple(&atre::CPU::opLDX, AddressingMode::AbsoluteYPaged, 3, 4);
-	m_opCodeMap[0xA0] = std::make_tuple(&atre::CPU::opLDY, AddressingMode::Immediate, 2, 2);
-	m_opCodeMap[0xA4] = std::make_tuple(&atre::CPU::opLDY, AddressingMode::ZeroPage, 2, 3);
-	m_opCodeMap[0xB4] = std::make_tuple(&atre::CPU::opLDY, AddressingMode::ZeroPageX, 2, 4);
-	m_opCodeMap[0xAC] = std::make_tuple(&atre::CPU::opLDY, AddressingMode::Absolute, 3, 4);
-	m_opCodeMap[0xBC] = std::make_tuple(&atre::CPU::opLDY, AddressingMode::AbsoluteXPaged, 3, 4);
+	m_opCodeMap[0xA9] = make_tuple(&atre::CPU::opLDA, AddressingMode::Immediate, 2, 2);
+	m_opCodeMap[0xA5] = make_tuple(&atre::CPU::opLDA, AddressingMode::ZeroPage, 2, 3);
+	m_opCodeMap[0xB5] = make_tuple(&atre::CPU::opLDA, AddressingMode::ZeroPageX, 2, 4);
+	m_opCodeMap[0xAD] = make_tuple(&atre::CPU::opLDA, AddressingMode::Absolute, 3, 4);
+	m_opCodeMap[0xBD] = make_tuple(&atre::CPU::opLDA, AddressingMode::AbsoluteXPaged, 3, 4);
+	m_opCodeMap[0xB9] = make_tuple(&atre::CPU::opLDA, AddressingMode::AbsoluteYPaged, 3, 4);
+	m_opCodeMap[0xA1] = make_tuple(&atre::CPU::opLDA, AddressingMode::IndexedIndirect, 2, 6);
+	m_opCodeMap[0xB1] = make_tuple(&atre::CPU::opLDA, AddressingMode::IndirectIndexedPaged, 2, 5);
+	m_opCodeMap[0xA2] = make_tuple(&atre::CPU::opLDX, AddressingMode::Immediate, 2, 2);
+	m_opCodeMap[0xA6] = make_tuple(&atre::CPU::opLDX, AddressingMode::ZeroPage, 2, 3);
+	m_opCodeMap[0xB6] = make_tuple(&atre::CPU::opLDX, AddressingMode::ZeroPageY, 2, 4);
+	m_opCodeMap[0xAE] = make_tuple(&atre::CPU::opLDX, AddressingMode::Absolute, 3, 4);
+	m_opCodeMap[0xBE] = make_tuple(&atre::CPU::opLDX, AddressingMode::AbsoluteYPaged, 3, 4);
+	m_opCodeMap[0xA0] = make_tuple(&atre::CPU::opLDY, AddressingMode::Immediate, 2, 2);
+	m_opCodeMap[0xA4] = make_tuple(&atre::CPU::opLDY, AddressingMode::ZeroPage, 2, 3);
+	m_opCodeMap[0xB4] = make_tuple(&atre::CPU::opLDY, AddressingMode::ZeroPageX, 2, 4);
+	m_opCodeMap[0xAC] = make_tuple(&atre::CPU::opLDY, AddressingMode::Absolute, 3, 4);
+	m_opCodeMap[0xBC] = make_tuple(&atre::CPU::opLDY, AddressingMode::AbsoluteXPaged, 3, 4);
 
 	// LSR
-	m_opCodeMap[0x4A] = std::make_tuple(&atre::CPU::opLSR, AddressingMode::Accumulator, 1, 2);
-	m_opCodeMap[0x46] = std::make_tuple(&atre::CPU::opLSR, AddressingMode::ZeroPage, 2, 5);
-	m_opCodeMap[0x56] = std::make_tuple(&atre::CPU::opLSR, AddressingMode::ZeroPageX, 2, 6);
-	m_opCodeMap[0x4E] = std::make_tuple(&atre::CPU::opLSR, AddressingMode::Absolute, 3, 6);
-	m_opCodeMap[0x5E] = std::make_tuple(&atre::CPU::opLSR, AddressingMode::AbsoluteX, 3, 7);
+	m_opCodeMap[0x4A] = make_tuple(&atre::CPU::opLSR, AddressingMode::Accumulator, 1, 2);
+	m_opCodeMap[0x46] = make_tuple(&atre::CPU::opLSR, AddressingMode::ZeroPage, 2, 5);
+	m_opCodeMap[0x56] = make_tuple(&atre::CPU::opLSR, AddressingMode::ZeroPageX, 2, 6);
+	m_opCodeMap[0x4E] = make_tuple(&atre::CPU::opLSR, AddressingMode::Absolute, 3, 6);
+	m_opCodeMap[0x5E] = make_tuple(&atre::CPU::opLSR, AddressingMode::AbsoluteX, 3, 7);
 
 	// NOP
-	m_opCodeMap[0xEA] = std::make_tuple(&atre::CPU::opNOP, AddressingMode::None, 1, 2);
+	m_opCodeMap[0xEA] = make_tuple(&atre::CPU::opNOP, AddressingMode::None, 1, 2);
 
 	// ORA
-	m_opCodeMap[0x09] = std::make_tuple(&atre::CPU::opORA, AddressingMode::Immediate, 2, 2);
-	m_opCodeMap[0x05] = std::make_tuple(&atre::CPU::opORA, AddressingMode::ZeroPage, 2, 3);
-	m_opCodeMap[0x15] = std::make_tuple(&atre::CPU::opORA, AddressingMode::ZeroPageX, 2, 4);
-	m_opCodeMap[0x0D] = std::make_tuple(&atre::CPU::opORA, AddressingMode::Absolute, 3, 4);
-	m_opCodeMap[0x1D] = std::make_tuple(&atre::CPU::opORA, AddressingMode::AbsoluteXPaged, 3, 4);
-	m_opCodeMap[0x19] = std::make_tuple(&atre::CPU::opORA, AddressingMode::AbsoluteYPaged, 3, 4);
-	m_opCodeMap[0x01] = std::make_tuple(&atre::CPU::opORA, AddressingMode::IndexedIndirect, 2, 6);
-	m_opCodeMap[0x11] =
-		std::make_tuple(&atre::CPU::opORA, AddressingMode::IndirectIndexedPaged, 2, 5);
+	m_opCodeMap[0x09] = make_tuple(&atre::CPU::opORA, AddressingMode::Immediate, 2, 2);
+	m_opCodeMap[0x05] = make_tuple(&atre::CPU::opORA, AddressingMode::ZeroPage, 2, 3);
+	m_opCodeMap[0x15] = make_tuple(&atre::CPU::opORA, AddressingMode::ZeroPageX, 2, 4);
+	m_opCodeMap[0x0D] = make_tuple(&atre::CPU::opORA, AddressingMode::Absolute, 3, 4);
+	m_opCodeMap[0x1D] = make_tuple(&atre::CPU::opORA, AddressingMode::AbsoluteXPaged, 3, 4);
+	m_opCodeMap[0x19] = make_tuple(&atre::CPU::opORA, AddressingMode::AbsoluteYPaged, 3, 4);
+	m_opCodeMap[0x01] = make_tuple(&atre::CPU::opORA, AddressingMode::IndexedIndirect, 2, 6);
+	m_opCodeMap[0x11] = make_tuple(&atre::CPU::opORA, AddressingMode::IndirectIndexedPaged, 2, 5);
 
 	// push/pull
-	m_opCodeMap[0x48] = std::make_tuple(&atre::CPU::opPHA, AddressingMode::IndirectIndexed, 1, 3);
-	m_opCodeMap[0x08] = std::make_tuple(&atre::CPU::opPHP, AddressingMode::IndirectIndexed, 1, 3);
-	m_opCodeMap[0x68] = std::make_tuple(&atre::CPU::opPLA, AddressingMode::IndirectIndexed, 1, 4);
-	m_opCodeMap[0x28] = std::make_tuple(&atre::CPU::opPLP, AddressingMode::IndirectIndexed, 1, 4);
+	m_opCodeMap[0x48] = make_tuple(&atre::CPU::opPHA, AddressingMode::IndirectIndexed, 1, 3);
+	m_opCodeMap[0x08] = make_tuple(&atre::CPU::opPHP, AddressingMode::IndirectIndexed, 1, 3);
+	m_opCodeMap[0x68] = make_tuple(&atre::CPU::opPLA, AddressingMode::IndirectIndexed, 1, 4);
+	m_opCodeMap[0x28] = make_tuple(&atre::CPU::opPLP, AddressingMode::IndirectIndexed, 1, 4);
 
 	// ROL
-	m_opCodeMap[0x2A] = std::make_tuple(&atre::CPU::opROL, AddressingMode::Accumulator, 1, 2);
-	m_opCodeMap[0x26] = std::make_tuple(&atre::CPU::opROL, AddressingMode::ZeroPage, 2, 5);
-	m_opCodeMap[0x36] = std::make_tuple(&atre::CPU::opROL, AddressingMode::ZeroPageX, 2, 6);
-	m_opCodeMap[0x2E] = std::make_tuple(&atre::CPU::opROL, AddressingMode::Absolute, 3, 6);
-	m_opCodeMap[0x3E] = std::make_tuple(&atre::CPU::opROL, AddressingMode::AbsoluteX, 3, 7);
+	m_opCodeMap[0x2A] = make_tuple(&atre::CPU::opROL, AddressingMode::Accumulator, 1, 2);
+	m_opCodeMap[0x26] = make_tuple(&atre::CPU::opROL, AddressingMode::ZeroPage, 2, 5);
+	m_opCodeMap[0x36] = make_tuple(&atre::CPU::opROL, AddressingMode::ZeroPageX, 2, 6);
+	m_opCodeMap[0x2E] = make_tuple(&atre::CPU::opROL, AddressingMode::Absolute, 3, 6);
+	m_opCodeMap[0x3E] = make_tuple(&atre::CPU::opROL, AddressingMode::AbsoluteX, 3, 7);
 
 	// ROR
-	m_opCodeMap[0x6A] = std::make_tuple(&atre::CPU::opROR, AddressingMode::Accumulator, 1, 2);
-	m_opCodeMap[0x66] = std::make_tuple(&atre::CPU::opROR, AddressingMode::ZeroPage, 2, 5);
-	m_opCodeMap[0x76] = std::make_tuple(&atre::CPU::opROR, AddressingMode::ZeroPageX, 2, 6);
-	m_opCodeMap[0x6E] = std::make_tuple(&atre::CPU::opROR, AddressingMode::Absolute, 3, 6);
-	m_opCodeMap[0x7E] = std::make_tuple(&atre::CPU::opROR, AddressingMode::AbsoluteX, 3, 7);
+	m_opCodeMap[0x6A] = make_tuple(&atre::CPU::opROR, AddressingMode::Accumulator, 1, 2);
+	m_opCodeMap[0x66] = make_tuple(&atre::CPU::opROR, AddressingMode::ZeroPage, 2, 5);
+	m_opCodeMap[0x76] = make_tuple(&atre::CPU::opROR, AddressingMode::ZeroPageX, 2, 6);
+	m_opCodeMap[0x6E] = make_tuple(&atre::CPU::opROR, AddressingMode::Absolute, 3, 6);
+	m_opCodeMap[0x7E] = make_tuple(&atre::CPU::opROR, AddressingMode::AbsoluteX, 3, 7);
 
 	// RTI
-	m_opCodeMap[0x40] = std::make_tuple(&atre::CPU::opRTI, AddressingMode::None, 1, 6);
+	m_opCodeMap[0x40] = make_tuple(&atre::CPU::opRTI, AddressingMode::None, 1, 6);
 
 	// SBC
-	m_opCodeMap[0xE9] = std::make_tuple(&atre::CPU::opSBC, AddressingMode::Immediate, 2, 2);
-	m_opCodeMap[0xE5] = std::make_tuple(&atre::CPU::opSBC, AddressingMode::ZeroPage, 2, 3);
-	m_opCodeMap[0xF5] = std::make_tuple(&atre::CPU::opSBC, AddressingMode::ZeroPageX, 2, 4);
-	m_opCodeMap[0xED] = std::make_tuple(&atre::CPU::opSBC, AddressingMode::Absolute, 3, 4);
-	m_opCodeMap[0xFD] = std::make_tuple(&atre::CPU::opSBC, AddressingMode::AbsoluteXPaged, 3, 4);
-	m_opCodeMap[0xF9] = std::make_tuple(&atre::CPU::opSBC, AddressingMode::AbsoluteYPaged, 3, 4);
-	m_opCodeMap[0xE1] = std::make_tuple(&atre::CPU::opSBC, AddressingMode::IndexedIndirect, 2, 6);
-	m_opCodeMap[0xF1] =
-		std::make_tuple(&atre::CPU::opSBC, AddressingMode::IndirectIndexedPaged, 2, 5);
+	m_opCodeMap[0xE9] = make_tuple(&atre::CPU::opSBC, AddressingMode::Immediate, 2, 2);
+	m_opCodeMap[0xE5] = make_tuple(&atre::CPU::opSBC, AddressingMode::ZeroPage, 2, 3);
+	m_opCodeMap[0xF5] = make_tuple(&atre::CPU::opSBC, AddressingMode::ZeroPageX, 2, 4);
+	m_opCodeMap[0xED] = make_tuple(&atre::CPU::opSBC, AddressingMode::Absolute, 3, 4);
+	m_opCodeMap[0xFD] = make_tuple(&atre::CPU::opSBC, AddressingMode::AbsoluteXPaged, 3, 4);
+	m_opCodeMap[0xF9] = make_tuple(&atre::CPU::opSBC, AddressingMode::AbsoluteYPaged, 3, 4);
+	m_opCodeMap[0xE1] = make_tuple(&atre::CPU::opSBC, AddressingMode::IndexedIndirect, 2, 6);
+	m_opCodeMap[0xF1] = make_tuple(&atre::CPU::opSBC, AddressingMode::IndirectIndexedPaged, 2, 5);
 
 	// set flags
-	m_opCodeMap[0x38] = std::make_tuple(&atre::CPU::opSEC, AddressingMode::None, 1, 2);
-	m_opCodeMap[0xF8] = std::make_tuple(&atre::CPU::opSED, AddressingMode::None, 1, 2);
-	m_opCodeMap[0x78] = std::make_tuple(&atre::CPU::opSEI, AddressingMode::None, 1, 2);
+	m_opCodeMap[0x38] = make_tuple(&atre::CPU::opSEC, AddressingMode::None, 1, 2);
+	m_opCodeMap[0xF8] = make_tuple(&atre::CPU::opSED, AddressingMode::None, 1, 2);
+	m_opCodeMap[0x78] = make_tuple(&atre::CPU::opSEI, AddressingMode::None, 1, 2);
 
 	// store
-	m_opCodeMap[0x85] = std::make_tuple(&atre::CPU::opSTA, AddressingMode::ZeroPage, 2, 3);
-	m_opCodeMap[0x95] = std::make_tuple(&atre::CPU::opSTA, AddressingMode::ZeroPageX, 2, 4);
-	m_opCodeMap[0x8D] = std::make_tuple(&atre::CPU::opSTA, AddressingMode::Absolute, 3, 4);
-	m_opCodeMap[0x9D] = std::make_tuple(&atre::CPU::opSTA, AddressingMode::AbsoluteX, 3, 5);
-	m_opCodeMap[0x99] = std::make_tuple(&atre::CPU::opSTA, AddressingMode::AbsoluteY, 3, 5);
-	m_opCodeMap[0x81] = std::make_tuple(&atre::CPU::opSTA, AddressingMode::IndexedIndirect, 2, 6);
-	m_opCodeMap[0x91] = std::make_tuple(&atre::CPU::opSTA, AddressingMode::IndirectIndexed, 2, 6);
-	m_opCodeMap[0x86] = std::make_tuple(&atre::CPU::opSTX, AddressingMode::ZeroPage, 2, 3);
-	m_opCodeMap[0x96] = std::make_tuple(&atre::CPU::opSTX, AddressingMode::ZeroPageY, 2, 4);
-	m_opCodeMap[0x8E] = std::make_tuple(&atre::CPU::opSTX, AddressingMode::Absolute, 3, 4);
-	m_opCodeMap[0x84] = std::make_tuple(&atre::CPU::opSTY, AddressingMode::ZeroPage, 2, 3);
-	m_opCodeMap[0x94] = std::make_tuple(&atre::CPU::opSTY, AddressingMode::ZeroPageX, 2, 4);
-	m_opCodeMap[0x8C] = std::make_tuple(&atre::CPU::opSTY, AddressingMode::Absolute, 3, 4);
+	m_opCodeMap[0x85] = make_tuple(&atre::CPU::opSTA, AddressingMode::ZeroPage, 2, 3);
+	m_opCodeMap[0x95] = make_tuple(&atre::CPU::opSTA, AddressingMode::ZeroPageX, 2, 4);
+	m_opCodeMap[0x8D] = make_tuple(&atre::CPU::opSTA, AddressingMode::Absolute, 3, 4);
+	m_opCodeMap[0x9D] = make_tuple(&atre::CPU::opSTA, AddressingMode::AbsoluteX, 3, 5);
+	m_opCodeMap[0x99] = make_tuple(&atre::CPU::opSTA, AddressingMode::AbsoluteY, 3, 5);
+	m_opCodeMap[0x81] = make_tuple(&atre::CPU::opSTA, AddressingMode::IndexedIndirect, 2, 6);
+	m_opCodeMap[0x91] = make_tuple(&atre::CPU::opSTA, AddressingMode::IndirectIndexed, 2, 6);
+	m_opCodeMap[0x86] = make_tuple(&atre::CPU::opSTX, AddressingMode::ZeroPage, 2, 3);
+	m_opCodeMap[0x96] = make_tuple(&atre::CPU::opSTX, AddressingMode::ZeroPageY, 2, 4);
+	m_opCodeMap[0x8E] = make_tuple(&atre::CPU::opSTX, AddressingMode::Absolute, 3, 4);
+	m_opCodeMap[0x84] = make_tuple(&atre::CPU::opSTY, AddressingMode::ZeroPage, 2, 3);
+	m_opCodeMap[0x94] = make_tuple(&atre::CPU::opSTY, AddressingMode::ZeroPageX, 2, 4);
+	m_opCodeMap[0x8C] = make_tuple(&atre::CPU::opSTY, AddressingMode::Absolute, 3, 4);
 
 	// transfer
-	m_opCodeMap[0xAA] = std::make_tuple(&atre::CPU::opTAX, AddressingMode::None, 1, 2);
-	m_opCodeMap[0xA8] = std::make_tuple(&atre::CPU::opTAY, AddressingMode::None, 1, 2);
-	m_opCodeMap[0xBA] = std::make_tuple(&atre::CPU::opTSX, AddressingMode::None, 1, 2);
-	m_opCodeMap[0x8A] = std::make_tuple(&atre::CPU::opTXA, AddressingMode::None, 1, 2);
-	m_opCodeMap[0x9A] = std::make_tuple(&atre::CPU::opTXS, AddressingMode::None, 1, 2);
-	m_opCodeMap[0x98] = std::make_tuple(&atre::CPU::opTYA, AddressingMode::None, 1, 2);
+	m_opCodeMap[0xAA] = make_tuple(&atre::CPU::opTAX, AddressingMode::None, 1, 2);
+	m_opCodeMap[0xA8] = make_tuple(&atre::CPU::opTAY, AddressingMode::None, 1, 2);
+	m_opCodeMap[0xBA] = make_tuple(&atre::CPU::opTSX, AddressingMode::None, 1, 2);
+	m_opCodeMap[0x8A] = make_tuple(&atre::CPU::opTXA, AddressingMode::None, 1, 2);
+	m_opCodeMap[0x9A] = make_tuple(&atre::CPU::opTXS, AddressingMode::None, 1, 2);
+	m_opCodeMap[0x98] = make_tuple(&atre::CPU::opTYA, AddressingMode::None, 1, 2);
 }
 
 void CPU::JumpTo(word_t startAddr)
@@ -1056,14 +1049,14 @@ void CPU::Execute()
 	}
 	const byte_t code	= m_RAM->Get(PC);
 	const auto&	 opCode = m_opCodeMap[code];
-	if(std::get<2>(opCode) > 0)
+	if(get<2>(opCode) > 0)
 	{
-		auto adr	 = std::get<1>(opCode);
-		auto func	 = std::get<0>(opCode);
-		auto opIndex = PC + 1;
+		const auto adr	   = get<1>(opCode);
+		const auto func	   = get<0>(opCode);
+		const auto opIndex = static_cast<word_t>(PC + 1);
 
 		// PC already points to next instruction
-		PC += std::get<2>(opCode);
+		PC += static_cast<word_t>(get<2>(opCode));
 		(this->*func)(opIndex, adr);
 
 		if(m_showSteps)
@@ -1082,11 +1075,11 @@ void CPU::Execute()
 			m_debugger->OnTrap();
 		}
 
-		Cycles(std::get<3>(opCode));
+		Cycles(get<3>(opCode));
 	}
 	else
 	{
-		throw std::runtime_error("Unsupported OPcode");
+		throw runtime_error("Unsupported OPcode");
 	}
 }
 
