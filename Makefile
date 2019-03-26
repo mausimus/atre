@@ -9,7 +9,7 @@ SDL2	:= /usr/include/SDL2
 LIB		:= lib
 PCH		:= src/atre.hpp
 
-LIBRARIES	:= -pthread -latomic -lSDL2
+LIBRARIES	:= -pthread -latomic -lSDL2 -lstdc++fs
 
 ifeq ($(OS),Windows_NT)
 EXECUTABLE	:= atre.exe
