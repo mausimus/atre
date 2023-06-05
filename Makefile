@@ -1,4 +1,4 @@
-CC		:= g++-8
+CC		:= g++
 #CC		:= clang++
 C_FLAGS := -std=c++17 -Wall -Wextra -O3 -g
 
@@ -30,7 +30,9 @@ run: all
 	./$(BIN)/$(EXECUTABLE)
 
 $(OBJ)/%.o: $(SRC)/%.cpp
+	@mkdir -p obj
 	$(CC) $(C_FLAGS) -I$(INCLUDE) -I$(SDL2) -o $@ -c $<
 
 $(BIN)/$(EXECUTABLE): $(obj)
+	@mkdir -p bin
 	$(CC) $(C_FLAGS) -I$(INCLUDE) -I$(SDL2) $^ -o $@ $(LIBRARIES)
